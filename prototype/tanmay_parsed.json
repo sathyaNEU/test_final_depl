@@ -1,0 +1,146 @@
+{
+  "personal_info": {
+    "email": "pawar.ta@northeastern.edu",
+    "phone": "",
+    "linkedin": "LinkedIn",
+    "github": "GitHub",
+    "name": "Tanmay Pawar",
+    "location": "Boston, MA"
+  },
+  "education": [
+    {
+      "institution": "Northeastern University Boston",
+      "location": "MA",
+      "degree": "Master of Science in Information Systems Expected May 2026",
+      "expected_graduation": "May 2026",
+      "gpa": "4",
+      "coursework": [
+        "Data Science",
+        "Big Data Intelligence",
+        "Database Management GPA: 4"
+      ]
+    },
+    {
+      "institution": "Pune University Pune",
+      "location": "India",
+      "degree": "Bachelor of Engineering in Computer Engineering Mar 2018 - Jun 2022",
+      "start_date": "Mar 2018",
+      "end_date": "Jun 2022",
+      "coursework": [
+        "Computer Organization and Architecture",
+        "Machine Learning",
+        "DBMS",
+        "Cloud"
+      ]
+    }
+  ],
+  "certifications": [
+    {
+      "name": "AZ-900(Azure Fundamentals)"
+    }
+  ],
+  "skills": {
+    "Programming Languages": [
+      "Python",
+      "C#",
+      "Java",
+      "HTML",
+      "CSS",
+      "JavaScript"
+    ],
+    "Databases & Tools": [
+      "Oracle SQL",
+      "MSSQL",
+      "Snowflake",
+      "dbt",
+      "Git",
+      "Apache Airflow"
+    ],
+    "Libraries & Frameworks": [
+      "Pandas",
+      "NumPy",
+      "scikit-learn",
+      "ReactJS",
+      ".NET",
+      "Streamlit",
+      "LangChain"
+    ]
+  },
+  "work_experience": [
+    {
+      "company": "Persistent Systems Ltd",
+      "position": "Software Engineer",
+      "start_date": "Jul 2022",
+      "end_date": "Jul 2024",
+      "location": "Pune, India",
+      "responsibilities": [
+        "Cleaned and managed datasets using Python (Pandas, NumPy) and SQL, improving data quality",
+        "Conducted data analysis using Python libraries to identify trends and patterns, supporting model fine-tuning and improving",
+        "Built interactive dashboards with Tableau and Python that provided real-time analytics and empowered business teams to",
+        "Implemented CI/CD pipelines using GitHub Actions, automating testing, building, and deployment processes for data",
+        "Built APIs within the .NET core and developed SQL stored procedures to optimize data retrieval for new features, cutting",
+        "Spearheaded deployment through Azure DevOps,"
+      ]
+    },
+    {
+      "company": "Persistent Systems Ltd",
+      "position": "Intern",
+      "start_date": "Feb 2022",
+      "end_date": "Jul 2022",
+      "location": "Pune, India",
+      "responsibilities": [
+        "Assisted in creating and managing dynamic, scalable ReactJS components, contributing to a smoother user experience",
+        "Supported the design and development of RESTful APIs using .NET Core, which improved data retrieval efficiency",
+        "Collaborated closely with cross-functional teams to ensure seamless integration between front-end and back-end systems",
+        "Wrote SQL queries to extract data from various source tables and files, facilitating backend testing and improving data"
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "name": "Findata",
+      "technologies": [
+        "Python",
+        "Snowflake",
+        "Apache Airflow",
+        "AWS",
+        "dbt",
+        "Streamlit",
+        "FastAPI",
+        "Docker",
+        "GCP"
+      ],
+      "description": [
+        "Built an end-to-end financial data pipeline for SEC Financial Statement Data Sets using Snowflake, Airflow, and AWS S3."
+      ]
+    },
+    {
+      "name": "Pytract",
+      "technologies": [
+        "PyPDF2",
+        "Pdfplumber",
+        "BeautifulSoup",
+        "Docling",
+        "AWS S3",
+        "FastAPI",
+        "Streamlit"
+      ],
+      "description": [
+        "Built a prototype for document extraction, standardization, and storage using Python and AWS S3. Exposed data via"
+      ]
+    },
+    {
+      "name": "MediSense",
+      "technologies": [
+        "AWS S3",
+        "LangGraph",
+        "RAG",
+        "Streamlit",
+        "GCP"
+      ],
+      "description": [
+        "Developed MediSense, a medical data pipeline using BeautifulSoup, AWS S3, and LangChain for efficient web data"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,119 @@
+{
+  "personal_info": {
+    "email": "deopurkar.a@northeastern.edu",
+    "phone": "",
+    "linkedin": "LinkedIn",
+    "name": "Ankit Deopurkar",
+    "location": "Boston, MA"
+  },
+  "education": [
+    {
+      "institution": "Northeastern University Boston",
+      "location": "MA",
+      "degree": "Master of Science in Information Systems Expected May 2026",
+      "expected_graduation": "May 2026",
+      "gpa": "3.7",
+      "coursework": [
+        "Data Science Engineering Methods & Tools",
+        "Application Engineering & Development",
+        "Big-Data"
+      ]
+    },
+    {
+      "institution": "University Of Mumbai Mumbai",
+      "location": "INDIA",
+      "degree": "Bachelor of Engineering in Electronics Engineering Aug 2017 - Jun 2021",
+      "start_date": "Aug 2017",
+      "end_date": "Jun 2021"
+    }
+  ],
+  "skills": {
+    "Programming Languages": [
+      "Java",
+      "Python",
+      "C++",
+      "C",
+      "JavaScript",
+      "C#"
+    ],
+    "Software": [
+      "Object-Oriented Programming (OOP)",
+      "Design Patterns",
+      "RESTful APIs",
+      "Microservices",
+      "Multithreading",
+      "Unit Testing"
+    ],
+    "Cloud & DevOps": [
+      "AWS (EC2",
+      "S3",
+      "Lambda",
+      "API Gateway)",
+      "Docker",
+      "Kubernetes",
+      "Jenkins",
+      "Git",
+      "Linux"
+    ],
+    "Databases": [
+      "PostgreSQL",
+      "MySQL",
+      "MongoDB",
+      "Oracle Cloud"
+    ],
+    "Libraries & Frameworks": [
+      "NumPy",
+      "Pandas",
+      "TensorFlow",
+      "Sci-Kit Learn",
+      "PySpark",
+      "Kafka"
+    ]
+  },
+  "work_experience": [
+    {
+      "location": "KPMG India Mumbai, INDIA",
+      "responsibilities": [
+        "Developed Python-based financial risk APIs for investment banks, supporting real-time credit risk evaluations.",
+        "Optimized multi-threaded ETL pipelines handling 100M+ transactions daily, reducing processing time by 60%.",
+        "Built automated trading and risk analysis systems with FastAPI and Flask, reducing manual reporting efforts by",
+        "Migrated monolithic banking apps to Python-based microservices on AWS, cutting operational costs by 30%",
+        "Implemented fraud detection models using Kafka, Spark, and ML, improving detection rates by 40%",
+        "Prepared a multi-disk security system using C++ and C# with AES-256 encryption, enhancing system integrity",
+        "Designed a pipeline for data transfer across the Windows Registry in C++ which allowed transfer of SHA-256",
+        "Conducted data-driven testing, including UAT and SQL-based backend validation, ensuring system reliability"
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "name": "Web Scraping & Automated Data Extraction Jan 2025",
+      "description": [
+        "Built a scalable web scraping system using BeautifulSoup, Firecrawl, and a PDF parser to extract unstructured",
+        "data from online sources",
+        "Developed an API using FastAPI to expose extracted data, allowing seamless integration with other applications",
+        "Designed an interactive Streamlit dashboard for real-time visualization and exploration of extracted datasets"
+      ]
+    },
+    {
+      "name": "Fundamental and Financial Data Extraction Feb 2025",
+      "description": [
+        "Built a FastAPI web scraper to extract dataset links from financial websites, automating data ingestion",
+        "Designed a multi-format data storage architecture (JSON, raw, denormalized) to support ETL workflows and",
+        "improve data accessibility",
+        "Created an Airflow DAG for data validation and staging using DBT, ensuring data integrity before loading into"
+      ]
+    },
+    {
+      "name": "Library Analytics Tool Aug 2024",
+      "description": [
+        "Built an end-to-end predictive analytics tool using Python, SQL, and Scikit-Learn to forecast library fee delays",
+        "and analyze reader behavior",
+        "Implemented K-Means clustering to segment readers and generate data-driven recommendations for personalized",
+        "library services",
+        "Developed a Flask-based web app for administrators, providing real-time insights on reader preferences and",
+        "overdue patterns"
+      ]
+    }
+  ]
+}
