@@ -12,7 +12,7 @@ import json
 from google.cloud import storage
 from dotenv import load_dotenv
 import os 
-from datetime import datetime
+from datetime import datetime, timedelta
 import uuid
 
 
@@ -133,12 +133,15 @@ def scrape_linkedin_job(url, use_proxy= False):
         # Location
         try:
             job_data['location'] = soup.select_one('.topcard__flavor--bullet').text.strip()
+
         except:
             try:
                 job_data['location'] = soup.select_one('.top-card-layout__card .topcard__flavor-row .location').text.strip()
+
             except:
                 try:
                     job_data['location'] = soup.select_one('.topcard__subline-location').text.strip()
+
                 except:
                     job_data['location'] = "Not found"
                 
@@ -154,6 +157,25 @@ def scrape_linkedin_job(url, use_proxy= False):
                 except:
                     job_data['posted_date'] = "Not found"
         
+        if job_data['posted_date'] != "Not found":
+            posted_text = job_data['posted_date'].lower().split()
+            try:
+                value = int(posted_text[0])
+                unit = posted_text[1]
+
+                if "minute" in unit:
+                    posted_date = datetime.now() - timedelta(minutes=value)
+                elif "hour" in unit:
+                    posted_date = datetime.now() - timedelta(hours=value)
+                else:
+                    posted_date = datetime.now()  # fallback if unit is unrecognized
+
+                job_data['posted_date'] = posted_date.strftime('%Y-%m-%d %H:%M:%S')
+            except Exception as e:
+                print(f"Couldn't parse posted date: {e}")
+                job_data['posted_date'] = "Parsing failed"  
+       
+               
         # Job description
         try:
             job_data['description'] = soup.select_one('.description__text').text.strip()
@@ -185,7 +207,6 @@ def scrape_linkedin_job(url, use_proxy= False):
         
         # job_data['criteria'] = job_criteria
         
-    
         # Number of applicants 
         try:
             job_data['applicants'] = soup.select_one('.num-applicants__caption').text.strip()
@@ -276,9 +297,7 @@ def save_to_json(job_data_list, filename="jobs.json"):
 
 def get_job_information(links):
     try:
-        # Initialize an empty list to store all job data
-        all_jobs_data = []
-        
+        # Initialize an empty list to store all job data        
         for i, link in enumerate(links):
             job_uuid = str(uuid.uuid4())
             job_url = link['url']
@@ -292,36 +311,26 @@ def get_job_information(links):
                 
             job_data = scrape_linkedin_job(job_url)
             job_data['role'] = job_role
+            job_data['url'] = link['url']
 
             # Check if there was an error
             if "error" in job_data:
                 print(f"Error occurred for {job_role}: {job_data['error']}")
                 continue
                 
-            # Add this job's data to our list
-            all_jobs_data.append(job_data)
-            print(f"✓ Added job #{len(all_jobs_data)}: {job_role}")
-        
-        print(f"Total jobs collected: {len(all_jobs_data)}/{len(links)}")
-        
-        if not all_jobs_data:
-            print("No job data was collected. Exiting.")
-            return []
+            temp_file = f"{job_role}.json"
             
-        # Create a temporary file to store the JSON
-        temp_file = f"{job_role}.json"
-        
-        # Write all job data to a single JSON file
-        with open(temp_file, 'w', encoding='utf-8') as f:
-            json.dump(all_jobs_data, f, indent=4, ensure_ascii=False)
-        
-        
-        save_to_json(temp_file)
-        # Upload to Google Cloud Storage
-        bucket = client.bucket("botfolio")
-        blob = bucket.blob(f"{current_year}/{current_month}/{current_day}/{current_hour}/{job_role}/{job_role}_{job_uuid}.json")
-        blob.upload_from_filename(temp_file, content_type="application/json")
-        
+
+            # Write all job data to a single JSON file
+            with open(temp_file, 'w', encoding='utf-8') as f:
+                json.dump(job_data, f, indent=4, ensure_ascii=False)
+            
+            # Upload to Google Cloud Storage
+
+            bucket = client.bucket("botfolio")
+            blob = bucket.blob(f"{current_year}/{current_month}/{current_day}/{current_hour}/{job_role}/{job_role}_{job_uuid}.json")
+            blob.upload_from_filename(temp_file, content_type="application/json")
+            
         # Clean up the temporary file
         try:
             os.remove(temp_file)
@@ -329,8 +338,8 @@ def get_job_information(links):
         except Exception as e:
             print(f"Warning: Could not remove temporary file: {e}")
 
-        print(f"All {len(all_jobs_data)} jobs successfully saved to JSON and uploaded to GCS")
-        return all_jobs_data
+        print(f"All {len(job_data)} jobs successfully saved to JSON and uploaded to GCS")
+        return job_data
         
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
