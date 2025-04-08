@@ -10,17 +10,17 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import json
 from google.cloud import storage
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 import os 
-from datetime import datetime, timedelta
+from datetime import datetime
 import uuid
+from airflow.hooks.base import BaseHook
+from airflow.providers.google.cloud.hooks.gcs import GCSHook
+from zoneinfo import ZoneInfo  
 
+# os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "D:/BigDataIntelligence/Assigment/Final_Project/linkedIn_scrapper/gcpkeys.json"
 
-load_dotenv()
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "D:/BigDataIntelligence/Assigment/Final_Project/linkedIn_scrapper/gcpkeys.json"
-client = storage.Client()
-
-now = datetime.now()
+now = datetime.now(ZoneInfo("America/New_York"))
 current_year = now.year
 current_month = now.month
 current_day = now.day
@@ -46,6 +46,8 @@ def scrape_linkedin_job(url, use_proxy= False):
     Scrape job details from a LinkedIn job posting
     
     """
+
+    
     # Validate URL
     if not url.startswith("http"):
         url = "https://" + url
@@ -133,15 +135,12 @@ def scrape_linkedin_job(url, use_proxy= False):
         # Location
         try:
             job_data['location'] = soup.select_one('.topcard__flavor--bullet').text.strip()
-
         except:
             try:
                 job_data['location'] = soup.select_one('.top-card-layout__card .topcard__flavor-row .location').text.strip()
-
             except:
                 try:
                     job_data['location'] = soup.select_one('.topcard__subline-location').text.strip()
-
                 except:
                     job_data['location'] = "Not found"
                 
@@ -157,25 +156,6 @@ def scrape_linkedin_job(url, use_proxy= False):
                 except:
                     job_data['posted_date'] = "Not found"
         
-        if job_data['posted_date'] != "Not found":
-            posted_text = job_data['posted_date'].lower().split()
-            try:
-                value = int(posted_text[0])
-                unit = posted_text[1]
-
-                if "minute" in unit:
-                    posted_date = datetime.now() - timedelta(minutes=value)
-                elif "hour" in unit:
-                    posted_date = datetime.now() - timedelta(hours=value)
-                else:
-                    posted_date = datetime.now()  # fallback if unit is unrecognized
-
-                job_data['posted_date'] = posted_date.strftime('%Y-%m-%d %H:%M:%S')
-            except Exception as e:
-                print(f"Couldn't parse posted date: {e}")
-                job_data['posted_date'] = "Parsing failed"  
-       
-               
         # Job description
         try:
             job_data['description'] = soup.select_one('.description__text').text.strip()
@@ -207,6 +187,7 @@ def scrape_linkedin_job(url, use_proxy= False):
         
         # job_data['criteria'] = job_criteria
         
+    
         # Number of applicants 
         try:
             job_data['applicants'] = soup.select_one('.num-applicants__caption').text.strip()
@@ -295,9 +276,24 @@ def save_to_json(job_data_list, filename="jobs.json"):
 
 
 
-def get_job_information(links):
+def get_job_information(**context):
     try:
-        # Initialize an empty list to store all job data        
+
+        # links = kwargs['templates_dict']['links']
+        # # Initialize an empty list to store all job data
+        all_jobs_data = []
+        ti = context['ti']
+         
+    # Extract role name from task_id
+        task_id = context['task'].task_id
+        role_name = context['task'].task_id.split('.')[-1] \
+            .replace('process_', '') \
+            .replace('_jobs', '')
+
+        # Pull data from XCom
+        scraped_data = ti.xcom_pull(task_ids='scrape_job_links')        
+        links = scraped_data[role_name]
+
         for i, link in enumerate(links):
             job_uuid = str(uuid.uuid4())
             job_url = link['url']
@@ -313,23 +309,32 @@ def get_job_information(links):
             job_data['role'] = job_role
             job_data['url'] = link['url']
 
+
             # Check if there was an error
             if "error" in job_data:
                 print(f"Error occurred for {job_role}: {job_data['error']}")
                 continue
                 
+            # Create a temporary file to store the JSON
             temp_file = f"{job_role}.json"
-            
-
-            # Write all job data to a single JSON file
+        
+        # Write all job data to a single JSON file
+              # Write all job data to a single JSON file
             with open(temp_file, 'w', encoding='utf-8') as f:
                 json.dump(job_data, f, indent=4, ensure_ascii=False)
-            
-            # Upload to Google Cloud Storage
 
-            bucket = client.bucket("botfolio")
-            blob = bucket.blob(f"{current_year}/{current_month}/{current_day}/{current_hour}/{job_role}/{job_role}_{job_uuid}.json")
-            blob.upload_from_filename(temp_file, content_type="application/json")
+            try:
+                gcs_hook = GCSHook(gcp_conn_id='google_cloud_default')
+                gcs_hook.upload(
+                    bucket_name="botfolio",  # Replace with your actual bucket name
+                    object_name=f"{current_year}/{current_month}/{current_day}/{current_hour}/{job_role}/{job_role}_{job_uuid}.json",
+                    filename=temp_file,
+                    mime_type='application/json'
+                    )
+                print("Data Uploaded successfully")
+        
+            except Exception as e:
+                print("Upload failed")
             
         # Clean up the temporary file
         try:
@@ -338,8 +343,8 @@ def get_job_information(links):
         except Exception as e:
             print(f"Warning: Could not remove temporary file: {e}")
 
-        print(f"All {len(job_data)} jobs successfully saved to JSON and uploaded to GCS")
-        return job_data
+        print(f"All jobs successfully saved to JSON and uploaded to GCS")
+        return all_jobs_data
         
     except Exception as e:
         print(f"An unexpected error occurred: {e}")

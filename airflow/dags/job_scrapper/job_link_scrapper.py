@@ -9,17 +9,17 @@ import re
 
 
 
-def generate_linkedin_job_url(job_roles, options=None):
+def generate_linkedin_job_url(job_roles, options):
     """
     Generates a LinkedIn job search URL for specified job roles
     
     """
-    # Base LinkedIn job search URL
+
+
     base_url = "https://www.linkedin.com/jobs/search/"
     
     # Default options
     default_options = {
-        "time_posted": 1800,  # Last 2 weeks (in hours)
         "location": "",
         "geo_id": "",
         "remote": False
@@ -136,11 +136,17 @@ def get_role_keywords(role):
 
 
 
-def scrape_linkedin_jobs(job_roles, options=None, output_dir='linkedin_scrapper/linkedin_jobs', filter_by_role=True):
+def scrape_linkedin_jobs(**context):
     """
     Generates URLs and scrapes job listings for one or multiple job roles,
     filtering results to ensure they're relevant to the searched role
     """
+
+    job_roles = context['params']['job_roles']
+    options = context['params']['options']
+
+    filter_by_role=True
+    output_dir='linkedin_scrapper/linkedin_jobs'
     # Create output directory if it doesn't exist
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
