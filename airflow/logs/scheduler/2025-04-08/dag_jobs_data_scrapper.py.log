@@ -215,3 +215,24 @@
 [2025-04-08T03:58:24.456+0000] {logging_mixin.py:190} INFO - [2025-04-08T03:58:24.455+0000] {dag.py:3239} INFO - Sync 1 DAGs
 [2025-04-08T03:58:24.491+0000] {logging_mixin.py:190} INFO - [2025-04-08T03:58:24.491+0000] {dag.py:4180} INFO - Setting next_dagrun for job_scrapper to 2025-04-08 00:00:00+00:00, run_after=2025-04-09 00:00:00+00:00
 [2025-04-08T03:58:24.516+0000] {processor.py:208} INFO - Processing /opt/airflow/dags/dag_jobs_data_scrapper.py took 0.402 seconds
+[2025-04-08T03:58:54.615+0000] {processor.py:186} INFO - Started process (PID=304) to work on /opt/airflow/dags/dag_jobs_data_scrapper.py
+[2025-04-08T03:58:54.616+0000] {processor.py:914} INFO - Processing file /opt/airflow/dags/dag_jobs_data_scrapper.py for tasks to queue
+[2025-04-08T03:58:54.618+0000] {logging_mixin.py:190} INFO - [2025-04-08T03:58:54.618+0000] {dagbag.py:588} INFO - Filling up the DagBag from /opt/airflow/dags/dag_jobs_data_scrapper.py
+[2025-04-08T03:58:54.795+0000] {processor.py:925} INFO - DAG(s) 'job_scrapper' retrieved from /opt/airflow/dags/dag_jobs_data_scrapper.py
+[2025-04-08T03:58:54.820+0000] {logging_mixin.py:190} INFO - [2025-04-08T03:58:54.819+0000] {dag.py:3239} INFO - Sync 1 DAGs
+[2025-04-08T03:58:54.840+0000] {logging_mixin.py:190} INFO - [2025-04-08T03:58:54.840+0000] {dag.py:4180} INFO - Setting next_dagrun for job_scrapper to 2025-04-08 00:00:00+00:00, run_after=2025-04-09 00:00:00+00:00
+[2025-04-08T03:58:54.861+0000] {processor.py:208} INFO - Processing /opt/airflow/dags/dag_jobs_data_scrapper.py took 0.252 seconds
+[2025-04-08T03:59:25.138+0000] {processor.py:186} INFO - Started process (PID=311) to work on /opt/airflow/dags/dag_jobs_data_scrapper.py
+[2025-04-08T03:59:25.140+0000] {processor.py:914} INFO - Processing file /opt/airflow/dags/dag_jobs_data_scrapper.py for tasks to queue
+[2025-04-08T03:59:25.144+0000] {logging_mixin.py:190} INFO - [2025-04-08T03:59:25.143+0000] {dagbag.py:588} INFO - Filling up the DagBag from /opt/airflow/dags/dag_jobs_data_scrapper.py
+[2025-04-08T03:59:25.414+0000] {processor.py:925} INFO - DAG(s) 'job_scrapper' retrieved from /opt/airflow/dags/dag_jobs_data_scrapper.py
+[2025-04-08T03:59:25.448+0000] {logging_mixin.py:190} INFO - [2025-04-08T03:59:25.446+0000] {dag.py:3239} INFO - Sync 1 DAGs
+[2025-04-08T03:59:25.496+0000] {logging_mixin.py:190} INFO - [2025-04-08T03:59:25.496+0000] {dag.py:4180} INFO - Setting next_dagrun for job_scrapper to 2025-04-08 00:00:00+00:00, run_after=2025-04-09 00:00:00+00:00
+[2025-04-08T03:59:25.530+0000] {processor.py:208} INFO - Processing /opt/airflow/dags/dag_jobs_data_scrapper.py took 0.401 seconds
+[2025-04-08T03:59:55.851+0000] {processor.py:186} INFO - Started process (PID=318) to work on /opt/airflow/dags/dag_jobs_data_scrapper.py
+[2025-04-08T03:59:55.853+0000] {processor.py:914} INFO - Processing file /opt/airflow/dags/dag_jobs_data_scrapper.py for tasks to queue
+[2025-04-08T03:59:55.867+0000] {logging_mixin.py:190} INFO - [2025-04-08T03:59:55.866+0000] {dagbag.py:588} INFO - Filling up the DagBag from /opt/airflow/dags/dag_jobs_data_scrapper.py
+[2025-04-08T03:59:56.436+0000] {processor.py:925} INFO - DAG(s) 'job_scrapper' retrieved from /opt/airflow/dags/dag_jobs_data_scrapper.py
+[2025-04-08T03:59:56.714+0000] {logging_mixin.py:190} INFO - [2025-04-08T03:59:56.709+0000] {dag.py:3239} INFO - Sync 1 DAGs
+[2025-04-08T03:59:56.907+0000] {logging_mixin.py:190} INFO - [2025-04-08T03:59:56.906+0000] {dag.py:4180} INFO - Setting next_dagrun for job_scrapper to 2025-04-08 00:00:00+00:00, run_after=2025-04-09 00:00:00+00:00
+[2025-04-08T03:59:57.116+0000] {processor.py:208} INFO - Processing /opt/airflow/dags/dag_jobs_data_scrapper.py took 1.294 seconds
