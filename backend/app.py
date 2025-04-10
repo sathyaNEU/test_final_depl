@@ -1,34 +1,22 @@
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from utils.resume_parser.core import *
-from utils.gcp.cloud_storage import upload_file, upload_json
+from utils.gcp.cloud_storage import upload_file, upload_json, generate_signed_url, get_gcp_credentials
 import os 
 from utils.resume_parser.core import * 
-from google.cloud import storage
 from google.oauth2 import service_account
-from datetime import timedelta
-
-
-
+from google.cloud import storage
 
 
 app = FastAPI()
 
 load_dotenv()
-GOOGLE_APPLICATION_CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
 BUCKET_NAME = os.getenv("GCP_RESUME_BUCKET_NAME")
-credentials = service_account.Credentials.from_service_account_file('gcpkeys.json')
+ 
+secrets_json = get_gcp_credentials()
+credentials = service_account.Credentials.from_service_account_info(secrets_json)
+client = storage.Client(credentials=credentials)
 
-def generate_signed_url(bucket_name, object_name):
-    client = storage.Client(credentials=credentials)
-    bucket = client.bucket(bucket_name)
-    blob = bucket.blob(object_name)
-
-    url = blob.generate_signed_url(
-        expiration=timedelta(hours=24),
-        method='GET'
-    )
-    return url
-
+ 
 @app.post("/resume-to-json/")
 async def text_to_json_converter(file: UploadFile = File(...)):
     if not file.filename.endswith(".pdf"):
@@ -38,11 +26,11 @@ async def text_to_json_converter(file: UploadFile = File(...)):
         file_data = file.file
         filename = file.filename.split(".")[0]
         content_type = file.content_type
-        result = upload_file(file_data, f"{filename}/{filename}.pdf", content_type )
+        result = upload_file(file_data, f"{filename}/{filename}.pdf", content_type, credentials)
 
-        presigned_url = generate_signed_url(BUCKET_NAME, f"{filename}/{filename}.pdf" )
+        presigned_url = generate_signed_url(BUCKET_NAME, f"{filename}/{filename}.pdf", credentials )
         json_data = get_structured_data(presigned_url)
-        response =  upload_json(json_data, f"{filename}/{filename}.json") 
+        response =  upload_json(json_data, f"{filename}/{filename}.json", credentials) 
 
         # print(f"response:{response}")
         return response   
