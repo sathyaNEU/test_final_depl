@@ -1,0 +1,16 @@
+selenium
+bs4
+apache-airflow
+google-cloud-storage
+python-dotenv
+apache-airflow-providers-google
+PyPDF2
+pdfplumber
+PyMuPDF
+litellm
+langchain
+langchain-core
+langgraph
+fastAPI
+uvicorn
+python-multipart
