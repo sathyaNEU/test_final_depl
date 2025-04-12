@@ -12,11 +12,19 @@ import json
 from google.cloud import storage
 # from dotenv import load_dotenv
 import os 
-from datetime import datetime
+from datetime import datetime, timedelta
 import uuid
 from airflow.hooks.base import BaseHook
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
 from zoneinfo import ZoneInfo  
+
+import logging
+
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=logging.INFO
+)
+
 
 # os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "D:/BigDataIntelligence/Assigment/Final_Project/linkedIn_scrapper/gcpkeys.json"
 
@@ -155,6 +163,24 @@ def scrape_linkedin_job(url, use_proxy= False):
                     job_data['posted_date'] = soup.select_one('.topcard__flavor--metadata').text.strip()
                 except:
                     job_data['posted_date'] = "Not found"
+        
+        if job_data['posted_date'] != "Not found":
+            posted_text = job_data['posted_date'].lower().split()
+            try:
+                value = int(posted_text[0])
+                unit = posted_text[1]
+
+                if "minute" in unit:
+                    posted_date = now - timedelta(minutes=value)
+                elif "hour" in unit:
+                    posted_date = now - timedelta(hours=value)
+                else:
+                    posted_date = now  # fallback if unit is unrecognized
+
+                job_data['posted_date'] = posted_date.strftime('%Y-%m-%d %H:%M:%S')
+            except Exception as e:
+                    print(f"Couldn't parse posted date: {e}")
+                    job_data['posted_date'] = "Parsing failed" 
         
         # Job description
         try:
@@ -325,6 +351,7 @@ def get_job_information(**context):
 
             try:
                 gcs_hook = GCSHook(gcp_conn_id='google_cloud_default')
+                logging.info(gcs_hook)
                 gcs_hook.upload(
                     bucket_name="botfolio",  # Replace with your actual bucket name
                     object_name=f"{current_year}/{current_month}/{current_day}/{current_hour}/{job_role}/{job_role}_{job_uuid}.json",

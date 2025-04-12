@@ -12,21 +12,27 @@ load_dotenv()
 BUCKET_NAME = os.getenv("GCP_RESUME_BUCKET_NAME")
 
 def upload_file(file_data, filename, content_type,credentials):
-    client = storage.Client(credentials=credentials)
-    bucket = client.bucket(BUCKET_NAME)
-    blob = bucket.blob(filename)
-    blob.upload_from_file(file_data, content_type=content_type)
-    return {"message": f"File '{filename}' uploaded successfully to bucket '{BUCKET_NAME}'."}
+    try:
+        client = storage.Client(credentials=credentials)
+        bucket = client.bucket(BUCKET_NAME)
+        blob = bucket.blob(filename)
+        blob.upload_from_file(file_data, content_type=content_type)
+        return 1
+    except:
+        return -1
 
 
 def upload_json(data, filename, credentials):
-    client = storage.Client(credentials=credentials)
-    bucket = client.bucket(BUCKET_NAME)
-    blob = bucket.blob(filename)
-    blob.upload_from_string(
-        data= json.dumps(data), 
-        content_type="application/json")
-    return {"message": f"File uploaded successfully to bucket '{BUCKET_NAME}'."}
+    try:
+        client = storage.Client(credentials=credentials)
+        bucket = client.bucket(BUCKET_NAME)
+        blob = bucket.blob(filename)
+        blob.upload_from_string(
+            data= json.dumps(data), 
+            content_type="application/json")
+        return 1
+    except:
+        -1
 
 
 def get_gcp_credentials():
@@ -45,12 +51,15 @@ def get_gcp_credentials():
 
 
 def generate_signed_url(bucket_name, object_name, credentials):
-    client = storage.Client(credentials=credentials)
-    bucket = client.bucket(bucket_name)
-    blob = bucket.blob(object_name)
+    try:
+        client = storage.Client(credentials=credentials)
+        bucket = client.bucket(bucket_name)
+        blob = bucket.blob(object_name)
 
-    url = blob.generate_signed_url(
-        expiration=timedelta(hours=24),
-        method='GET'
-    )
-    return url
+        url = blob.generate_signed_url(
+            expiration=timedelta(hours=24),
+            method='GET'
+        )
+        return url
+    except:
+        -1

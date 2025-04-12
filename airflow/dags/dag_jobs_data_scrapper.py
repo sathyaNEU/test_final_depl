@@ -11,12 +11,14 @@ from airflow.providers.google.cloud.hooks.gcs import GCSHook
 with DAG(
     dag_id="job_scrapper",
     description="dag for scraping job links and job deatils",
-    start_date=datetime(2025, 4, 5),
+    start_date=datetime(2025, 4, 11),
+    # schedule_interval="*/30 * * * *"
     schedule_interval="@daily"
 
 ) as dag :
 
-    roles=["data engineer"]
+    roles=["data engineer","data scientist", "software engineer"]
+    # roles=["data scientist"]
 
     scrape_job_links = PythonOperator (
         task_id = "scrape_job_links",
@@ -24,7 +26,7 @@ with DAG(
         params={
             "job_roles" : roles,
             "options" :{
-                "time_posted": 500,  
+                "time_posted": 1800,  
                 "location": "United States"
              }
         }

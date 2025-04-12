@@ -8,9 +8,17 @@ from utils.litellm.core import llm
 from utils.helper import * 
 import requests
 from io import BytesIO
-
+import google.generativeai as genai
+from utils.schema import *
+import os
+from utils.snowflake.snowflake_connector import *
+import logging
 
 load_dotenv()
+
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=logging.INFO)
 
 def extract_text_from_pdf(content):
         """Extract text from PDF file using pdfplumber for better text extraction"""
@@ -56,22 +64,59 @@ def extract_text_from_pdf(content):
 
 
 
-def get_structured_data(url):
-    """
-    Get Structured JSON using text and links 
-    """
 
-    response = requests.get(url)
-    pdf_content = response.content
-
+def get_structured_data(url, user_email, changes, mode='generate'):
+    """
+    Get Structured JSON using text and links with Gemini API
+    """
+    # Configure the Gemini API
+    logging.info('calling get structured data - ', changes, mode)
+    genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
     try:
-        data = extract_text_from_pdf(pdf_content)
-        prompt = prompt_for_json(data)
-
-        response = llm("gemini/gemini-1.5-pro",prompt)
-        cleaned_content = json.loads(response['answer'])
+        # Get PDF content
+        response = requests.get(url)
+        pdf_content = response.content
+        # Extract text
+        if mode=='generate':
+            data = extract_text_from_pdf(pdf_content) 
+        else:
+            data = get_this_column(user_email, 'resume_json')
+        logging.info(data)
+        # Create model and chat
+        model = genai.GenerativeModel(
+        model_name="gemini-1.5-pro",
+        generation_config=generation_config,
+        system_instruction=sys_resume_generate_prompt if mode == 'generate' else sys_resume_revise_prompt
+        ) 
+        # chat = model.start_chat(history=[
+        #     {
+        #         "role": "model",
+        #         "parts": sys_resume_generate_prompt if mode == 'generate' else sys_resume_revise_prompt
+        #     },
+        #     {
+        #         "role": "user",
+        #         "parts": user_resume_generate_prompt.format(data)
+        #               if mode == 'generate'\
+        #               else \
+        #                 user_resume_revise_prompt.format(data, changes)
+        #     }
+        # ])
+        chat = model.start_chat(history=[])
         
+        # Send message and get response
+
+        response = chat.send_message(user_resume_generate_prompt.format(data) if mode=='generate' else user_resume_revise_prompt.format(data, changes))
+        response_text = response.text.strip()
+
+        # Handle formatting
+        if response_text.startswith("```json"):
+            response_text = response_text.split("```json")[1]
+        if "```" in response_text:
+            response_text = response_text.split("```")[0]
+        
+        # Parse JSON
+        cleaned_content = json.loads(response_text.strip())
         return cleaned_content
-    
+        
     except Exception as e:
-        return str(e)
+        return {"error structuring": str(e)}
