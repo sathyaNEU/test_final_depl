@@ -12,8 +12,8 @@ with DAG(
     dag_id="job_scrapper",
     description="dag for scraping job links and job deatils",
     start_date=datetime(2025, 4, 11),
-    # schedule_interval="*/30 * * * *"
-    schedule_interval="@daily"
+    schedule_interval="*/30 * * * *"
+    # schedule_interval="@daily"
 
 ) as dag :
 
