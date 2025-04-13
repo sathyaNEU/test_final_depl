@@ -16,7 +16,17 @@ from datetime import datetime, timedelta
 import uuid
 from airflow.hooks.base import BaseHook
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
-from zoneinfo import ZoneInfo  
+from zoneinfo import ZoneInfo
+import re
+import spacy
+import pandas as pd
+import nltk
+from nltk.corpus import stopwords
+import sys
+import subprocess
+# from helper import tech_skills_list
+# from litellm_helper.core import llm
+# from litellm_helper.helper import promt_for_skills
 
 import logging
 
@@ -25,6 +35,43 @@ logging.basicConfig(
     level=logging.INFO
 )
 
+
+
+
+tech_skills_list = [
+        # Programming languages
+        "python", "java", "javascript", "typescript", "c\\+\\+", "c#", "ruby", "php", "scala", "kotlin", "swift",
+        "perl", "go", "rust", "r", "matlab", "bash", "shell", "sql", "nosql", "powershell", "objective-c",
+        
+        # Frameworks & libraries
+        "django", "flask", "fastapi", "spring", "react", "angular", "vue", "node\\.js", "express", 
+        "tensorflow", "pytorch", "keras", "scikit-learn", "pandas", "numpy", "scipy", "matplotlib",
+        "bootstrap", "jquery", "laravel", "symfony", "rails", "phoenix", "flutter", ".net", "xamarin",
+        
+        # Databases
+        "mysql", "postgresql", "mongodb", "cassandra", "redis", "elasticsearch", "sqlite", "oracle",
+        "sql server", "dynamodb", "mariadb", "firebase", "neo4j", "couchdb",
+        
+        # Cloud & DevOps
+        "aws", "azure", "gcp", "google cloud", "docker", "kubernetes", "jenkins", "travis", "circleci",
+        "terraform", "ansible", "chef", "puppet", "prometheus", "grafana", "istio", "envoy", "airflow",
+        
+        # Data Science & ML
+        "machine learning", "deep learning", "nlp", "computer vision", "neural networks", "data mining",
+        "statistics", "a/b testing", "time series", "regression", "classification", "clustering",
+        "jupyter", "data visualization", "etl", "hadoop", "spark", "kafka", "hive", "tableau", "power bi",
+        
+        # Web technologies
+        "html", "css", "sass", "less", "webpack", "babel", "graphql", "rest api", "soap",
+        "oauth", "jwt", "json", "xml", "microservices", "soa", "pwa",
+        
+        # Mobile
+        "android", "ios", "react native", "ionic", "cordova", "objective-c", "swift", "kotlin",
+        
+        # Other tools & methodologies
+        "git", "svn", "mercurial", "jira", "confluence", "agile", "scrum", "kanban", "ci/cd",
+        "tdd", "bdd", "oop", "functional programming", "linux", "unix", "vim", "emacs", "vscode"
+    ]
 
 # os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "D:/BigDataIntelligence/Assigment/Final_Project/linkedIn_scrapper/gcpkeys.json"
 
@@ -47,6 +94,9 @@ proxies = [
     # "http://user:pass@proxy1.example.com:8080",
     # "http://user:pass@proxy2.example.com:8080"
     ]      
+
+
+# subprocess.check_call([sys.executable, "-m", "spacy", "download", "en_core_web_sm"])
 
 
 def scrape_linkedin_job(url, use_proxy= False):
@@ -301,13 +351,43 @@ def save_to_json(job_data_list, filename="jobs.json"):
     print(f"Data saved to {filename}")
 
 
+def extract_skills_with_nlp(job_description):
+    """Extract skills using NLP techniques with built-in skills list"""
+    tech_skills = tech_skills_list
+
+
+    # Load spaCy model
+    nlp = spacy.load("en_core_web_sm")
+    
+    # Preprocess text
+    doc = nlp(job_description.lower())
+    
+    # Extract noun phrases as potential skills
+    noun_phrases = [chunk.text.lower() for chunk in doc.noun_chunks]
+    
+    # Match noun phrases against the technical skills list
+    matched_skills = []
+    for phrase in noun_phrases:
+        for skill in tech_skills:
+            if skill in phrase:
+                matched_skills.append(skill)
+                break
+    
+    # Also check for direct mentions of skills (not in noun phrases)
+    for skill in tech_skills:
+        if skill in job_description.lower() and skill not in matched_skills:
+            matched_skills.append(skill)
+    
+    return list(set(matched_skills))  # Remove duplicates
+
+
+
 
 def get_job_information(**context):
     try:
 
         # links = kwargs['templates_dict']['links']
         # # Initialize an empty list to store all job data
-        all_jobs_data = []
         ti = context['ti']
          
     # Extract role name from task_id
@@ -330,12 +410,16 @@ def get_job_information(**context):
             if not job_url or len(job_url) < 10:
                 print(f"Error: Invalid URL for {job_role}")
                 continue
-                
+            # Scrapind data for job in link
             job_data = scrape_linkedin_job(job_url)
             job_data['role'] = job_role
             job_data['url'] = link['url']
+            desc = job_data['description']
 
-
+            # extracting skills from job description
+            skills = extract_skills_with_nlp(desc) 
+            job_data['skills'] = skills
+            
             # Check if there was an error
             if "error" in job_data:
                 print(f"Error occurred for {job_role}: {job_data['error']}")
@@ -351,7 +435,6 @@ def get_job_information(**context):
 
             try:
                 gcs_hook = GCSHook(gcp_conn_id='google_cloud_default')
-                logging.info(gcs_hook)
                 gcs_hook.upload(
                     bucket_name="botfolio",  # Replace with your actual bucket name
                     object_name=f"{current_year}/{current_month}/{current_day}/{current_hour}/{job_role}/{job_role}_{job_uuid}.json",
@@ -371,7 +454,7 @@ def get_job_information(**context):
             print(f"Warning: Could not remove temporary file: {e}")
 
         print(f"All jobs successfully saved to JSON and uploaded to GCS")
-        return all_jobs_data
+        return job_data
         
     except Exception as e:
         print(f"An unexpected error occurred: {e}")

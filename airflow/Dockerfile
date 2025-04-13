@@ -26,3 +26,4 @@ RUN wget -q -P /tmp "https://storage.googleapis.com/chrome-for-testing-public/${
 
 
 USER airflow
+RUN pip install spacy && python -m spacy download en_core_web_sm
