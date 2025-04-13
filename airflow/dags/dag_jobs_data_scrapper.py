@@ -17,8 +17,8 @@ with DAG(
 
 ) as dag :
 
-    roles=["data engineer","data scientist", "software engineer"]
-    # roles=["data scientist"]
+    # roles=["data engineer","data scientist", "software engineer"]
+    roles=["software engineer"]
 
     scrape_job_links = PythonOperator (
         task_id = "scrape_job_links",
