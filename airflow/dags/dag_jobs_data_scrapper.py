@@ -1,10 +1,11 @@
 from airflow.operators.python import PythonOperator
 from airflow import DAG
-from job_scrapper.job_link_scrapper import * 
-from job_scrapper.job_info import *
+from utils.job_scrapper.job_link_scrapper import * 
+from utils.job_scrapper.job_info import *
 from airflow.utils.task_group import TaskGroup
 from airflow.operators.empty import EmptyOperator
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
+
 
 
 
@@ -12,12 +13,12 @@ with DAG(
     dag_id="job_scrapper",
     description="dag for scraping job links and job deatils",
     start_date=datetime(2025, 4, 11),
-    schedule_interval="*/30 * * * *"
-    # schedule_interval="@daily"
+    # schedule_interval="*/30 * * * *"
+    schedule_interval="@daily"
 
 ) as dag :
 
-    roles=["data engineer","data scientist", "software engineer"]
+    roles=["data engineer"]
     # roles=["software engineer"]
 
     scrape_job_links = PythonOperator (
