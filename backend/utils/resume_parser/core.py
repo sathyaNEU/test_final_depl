@@ -65,7 +65,7 @@ def extract_text_from_pdf(content):
 
 
 
-def get_structured_data(url, user_email, changes, mode='generate'):
+def get_structured_data(user_email, changes, mode='generate'):
     """
     Get Structured JSON using text and links with Gemini API
     """
@@ -73,12 +73,11 @@ def get_structured_data(url, user_email, changes, mode='generate'):
     logging.info('calling get structured data - ', changes, mode)
     genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
     try:
-        # Get PDF content
-        response = requests.get(url)
-        pdf_content = response.content
         # Extract text
         if mode=='generate':
-            data = extract_text_from_pdf(pdf_content) 
+            pdf_url = get_this_column(user_email, 'resume_pdf_url')
+            response = requests.get(pdf_url)
+            data = extract_text_from_pdf(response.content) 
         else:
             data = get_this_column(user_email, 'resume_json')
         logging.info(data)
@@ -88,19 +87,7 @@ def get_structured_data(url, user_email, changes, mode='generate'):
         generation_config=generation_config,
         system_instruction=sys_resume_generate_prompt if mode == 'generate' else sys_resume_revise_prompt
         ) 
-        # chat = model.start_chat(history=[
-        #     {
-        #         "role": "model",
-        #         "parts": sys_resume_generate_prompt if mode == 'generate' else sys_resume_revise_prompt
-        #     },
-        #     {
-        #         "role": "user",
-        #         "parts": user_resume_generate_prompt.format(data)
-        #               if mode == 'generate'\
-        #               else \
-        #                 user_resume_revise_prompt.format(data, changes)
-        #     }
-        # ])
+     
         chat = model.start_chat(history=[])
         
         # Send message and get response

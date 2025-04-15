@@ -2,6 +2,8 @@ import os
 import google.generativeai as genai
 from google.ai.generativelanguage_v1beta.types import content
 
+
+
 def resume_json_schema():
  return  {
     "type": "object",
@@ -117,8 +119,6 @@ sys_resume_revise_prompt =f"""
         Your task is to intelligently process the request, identify the relevant section(s) of the resume to update, and make the appropriate changes while ensuring the structure of the resume remains consistent with the provided schema.
         
         Below is the schema that defines the required fields and structure of the resume:
-        
-        {resume_json_schema()}
         
         When revising the resume:
         1. Maintain the integrity of the existing sections.
