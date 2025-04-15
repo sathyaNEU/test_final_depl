@@ -4,4 +4,5 @@ prototype
 test.ipynb
 __pycache__
 gcpkeys.json
+vertexAI.json
 airflow/logs

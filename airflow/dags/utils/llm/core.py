@@ -19,6 +19,7 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO
 )
+
 def get_vertexai_credentials(gcp_conn_id="vertex-ai"):
     connection = BaseHook.get_connection(gcp_conn_id)
     keyfile_dict = connection.extra_dejson.get("keyfile_dict")
