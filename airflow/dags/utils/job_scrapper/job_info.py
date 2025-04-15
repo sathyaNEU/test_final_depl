@@ -17,16 +17,8 @@ import uuid
 from airflow.hooks.base import BaseHook
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
 from zoneinfo import ZoneInfo
-import re
 import spacy
-import pandas as pd
-import nltk
-from nltk.corpus import stopwords
-import sys
-import subprocess
-# from helper import tech_skills_list
-# from litellm_helper.core import llm
-# from litellm_helper.helper import promt_for_skills
+from utils.llm.core import llm
 
 import logging
 
@@ -34,8 +26,6 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO
 )
-
-
 
 
 tech_skills_list = [
@@ -104,8 +94,7 @@ def scrape_linkedin_job(url, use_proxy= False):
     Scrape job details from a LinkedIn job posting
     
     """
-
-    
+   
     # Validate URL
     if not url.startswith("http"):
         url = "https://" + url
@@ -351,45 +340,13 @@ def save_to_json(job_data_list, filename="jobs.json"):
     print(f"Data saved to {filename}")
 
 
-def extract_skills_with_nlp(job_description):
-    """Extract skills using NLP techniques with built-in skills list"""
-    tech_skills = tech_skills_list
-
-
-    # Load spaCy model
-    nlp = spacy.load("en_core_web_sm")
-    
-    # Preprocess text
-    doc = nlp(job_description.lower())
-    
-    # Extract noun phrases as potential skills
-    noun_phrases = [chunk.text.lower() for chunk in doc.noun_chunks]
-    
-    # Match noun phrases against the technical skills list
-    matched_skills = []
-    for phrase in noun_phrases:
-        for skill in tech_skills:
-            if skill in phrase:
-                matched_skills.append(skill)
-                break
-    
-    # Also check for direct mentions of skills (not in noun phrases)
-    for skill in tech_skills:
-        if skill in job_description.lower() and skill not in matched_skills:
-            matched_skills.append(skill)
-    
-    return list(set(matched_skills))  # Remove duplicates
-
-
-
+ 
 
 def get_job_information(**context):
     try:
 
-        # links = kwargs['templates_dict']['links']
-        # # Initialize an empty list to store all job data
         ti = context['ti']
-         
+
     # Extract role name from task_id
         task_id = context['task'].task_id
         role_name = context['task'].task_id.split('.')[-1] \
@@ -414,10 +371,10 @@ def get_job_information(**context):
             job_data = scrape_linkedin_job(job_url)
             job_data['role'] = job_role
             job_data['url'] = link['url']
-            desc = job_data['description']
+            description = job_data['description']
 
             # extracting skills from job description
-            skills = extract_skills_with_nlp(desc) 
+            skills = llm(description) 
             job_data['skills'] = skills
             
             # Check if there was an error
@@ -453,8 +410,13 @@ def get_job_information(**context):
         except Exception as e:
             print(f"Warning: Could not remove temporary file: {e}")
 
-        print(f"All jobs successfully saved to JSON and uploaded to GCS")
-        return job_data
+        if len(job_data)> 0:
+            return {
+                "stauscode":200,
+                "message": "All jobs successfully saved to JSON and uploaded to GCS"
+            }
+        else:
+            return "No relevant jobs found"
         
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
