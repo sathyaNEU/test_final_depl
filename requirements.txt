@@ -14,4 +14,9 @@ langgraph
 fastAPI
 uvicorn
 python-multipart
+mdit_plain
+markdown-it-py
+cohere-haystack
+haystack-ai
+snowflake-connector-python[pandas]
 google-genai
