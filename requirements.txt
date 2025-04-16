@@ -19,3 +19,4 @@ markdown-it-py
 cohere-haystack
 haystack-ai
 snowflake-connector-python[pandas]
+google-genai

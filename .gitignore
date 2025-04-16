@@ -4,6 +4,11 @@ prototype
 test.ipynb
 __pycache__
 gcpkeys.json
+<<<<<<< HEAD
 airflow/dags/logs
 airflow/logs
 prototyping
+=======
+vertexAI.json
+airflow/logs
+>>>>>>> ea1f2d88a0aefc1fd0e54e9fb701682063f5ff39

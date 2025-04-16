@@ -1,10 +1,11 @@
 from airflow.operators.python import PythonOperator
 from airflow import DAG
-from job_scrapper.job_link_scrapper import * 
-from job_scrapper.job_info import *
+from utils.job_scrapper.job_link_scrapper import * 
+from utils.job_scrapper.job_info import *
 from airflow.utils.task_group import TaskGroup
 from airflow.operators.empty import EmptyOperator
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
+
 
 
 
@@ -17,7 +18,7 @@ with DAG(
 
 ) as dag :
 
-    roles=["data engineer","data scientist", "software engineer"]
+    roles=["data engineer", "data scientist", "software engineer"]
     # roles=["software engineer"]
 
     scrape_job_links = PythonOperator (

@@ -7,7 +7,7 @@ from google.oauth2 import service_account
 from google.cloud import storage
 from uuid import uuid4
 from pydantic import BaseModel
-from utils.snowflake.snowflake_connector import *
+from utils.snowflake.snowflake_connector import get_this_column, update_this_column, request_to_signup
 from typing import Optional
 import json 
 import logging
@@ -30,8 +30,18 @@ class jsonModel(BaseModel):
     changes : Optional[str] = None
     mode : str
     user_email : str
+
+class loginModel(BaseModel):
+    user_email : str
+    password : str
+
+class signupModel(BaseModel):
+    fullname: str
+    user_email: str
+    profession: str
+
  
-@app.post("/resume-to-json/")
+@app.post("/resume-to-gcp/")
 async def text_to_json_converter(user_email: str, file: UploadFile = File(...) ):
     if not file.filename.endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Invalid file type. Please upload a PDF file.")
@@ -50,21 +60,48 @@ async def text_to_json_converter(user_email: str, file: UploadFile = File(...) )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
-
-
 @app.post("/json-to-sf/")
 async def json_to_snowflake(requests : jsonModel):
     
     try:
         user_email = requests.user_email
         mode = requests.mode
-        changes = requests.changes if 'changes' in requests else None
-        pdf_url = get_this_column(user_email, 'resume_pdf_url')
-        logging.info(f'{user_email}------{pdf_url}-------{changes}')
-        json_data = get_structured_data(pdf_url, user_email, changes, mode)
+        changes = getattr(requests, 'changes', None)
+        json_data = get_structured_data(user_email, changes, mode)
         update_this_column(user_email, 'resume_json', json.dumps(json_data))
         return  json_data
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
+
+@app.post("/login/")
+async def login_user_if_exist(requests: loginModel):
+  
+    try:
+        user_email = requests.user_email
+        user_password = requests.password
+        response = get_this_column(user_email,"PASSWORD")
+        if user_password == response: 
+            return {"statuscode" : 200, "message":"Login successfull"}  
+        else: 
+            return {"statuscode":401, "message":"Invalid username or password"}
+            
+    except Exception as e:
+        return str(e)
+
+@app.post("/signup/")
+async def user_signup(requests : signupModel):
+    try:
+        fullname=requests.fullname
+        user_email=requests.user_email
+        profession=requests.profession
+        response = request_to_signup(user_email, fullname, profession)
+        if response != 0:
+            return {"statuscode" : 200, "message":"User request successfull"}
+        
+        else:
+            return {"statuscode" : 400, "message":"User already requested for account"}
+
+    except Exception as e:
+        return str(e)
