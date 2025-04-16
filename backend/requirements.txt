@@ -1,0 +1,15 @@
+PyPDF2
+pdfplumber
+PyMuPDF
+litellm
+langchain
+langchain-core
+langgraph
+fastAPI
+uvicorn
+python-multipart
+google-cloud-storage
+python-dotenv
+google-cloud-secret-manager>=2.16.0
+google-generativeai
+snowflake-connector-python[pandas]

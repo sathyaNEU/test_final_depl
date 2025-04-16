@@ -1,0 +1,9 @@
+.venv
+prototype
+.env
+test.ipynb
+__pycache__
+gcpkeys.json
+airflow/dags/logs
+airflow/logs
+prototyping
