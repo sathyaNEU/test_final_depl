@@ -7,8 +7,6 @@ from airflow.operators.empty import EmptyOperator
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
 
 
-
-
 with DAG(
     dag_id="job_scrapper",
     description="dag for scraping job links and job deatils",
