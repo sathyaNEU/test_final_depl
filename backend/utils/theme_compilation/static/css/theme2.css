@@ -1,0 +1,205 @@
+/* General Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f4f7fa;
+    color: #333;
+    line-height: 1.6;
+    padding: 20px;
+}
+
+/* Header Styling */
+header {
+    background-color: #1e3d58; /* Dark blue background */
+    color: #fff;
+    padding: 20px 0;
+    text-align: center;
+    border-radius: 8px;
+    margin-bottom: 30px;
+}
+
+header h1 {
+    font-size: 2.5em;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+header p {
+    font-size: 1.2em;
+    margin-top: 5px;
+}
+
+/* Container for the content */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Section Styling */
+section {
+    margin-bottom: 30px;
+}
+
+h2 {
+    font-size: 1.8em;
+    color: #1e3d58;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 2px solid #1e3d58;
+    padding-bottom: 5px;
+}
+
+p, li {
+    font-size: 1.1em;
+    margin-bottom: 8px;
+}
+
+/* Education Section */
+section h2 {
+    font-size: 1.8em;
+    color: #1e3d58;
+    border-bottom: 2px solid #1e3d58;
+    padding-bottom: 5px;
+}
+
+section p {
+    font-size: 1.1em;
+}
+
+/* Certifications Section */
+ul {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+ul li {
+    background: #f1f1f1;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    font-size: 1.1em;
+}
+
+/* Skills Section */
+section p {
+    background-color: #e9ecef;
+    padding: 10px;
+    border-radius: 5px;
+    margin-top: 10px;
+}
+
+section p strong {
+    font-weight: bold;
+}
+
+/* Work Experience Section */
+.job {
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.job-title {
+    font-size: 1.4em;
+    font-weight: bold;
+    color: #1e3d58;
+}
+
+.job ul {
+    padding-left: 20px;
+}
+
+.job ul li {
+    list-style-type: square;
+    margin-bottom: 8px;
+}
+
+/* Projects Section */
+section div {
+    background-color: #f9f9f9;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+section div strong {
+    font-size: 1.3em;
+    color: #1e3d58;
+}
+
+/* Contact Section */
+section p a {
+    color: #1e3d58;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+section p a:hover {
+    text-decoration: underline;
+}
+
+/* Special Styling for Personal Info */
+.personal-info {
+    background-color: #1e3d58;
+    color: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+}
+
+.personal-info h1 {
+    font-size: 2.5em;
+}
+
+.personal-info p {
+    font-size: 1.2em;
+}
+
+/* Responsive Design */
+@media screen and (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+
+    header h1 {
+        font-size: 2em;
+    }
+
+    header p {
+        font-size: 1em;
+    }
+
+    section h2 {
+        font-size: 1.5em;
+    }
+
+    .container {
+        padding: 10px;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    header h1 {
+        font-size: 1.8em;
+    }
+
+    section h2 {
+        font-size: 1.3em;
+    }
+
+    p, li {
+        font-size: 1em;
+    }
+}
