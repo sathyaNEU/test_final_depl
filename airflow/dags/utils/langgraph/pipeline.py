@@ -1,6 +1,7 @@
 from typing_extensions import TypedDict
 from langgraph.graph import StateGraph, START, END
 from mistralai import Mistral
+from mistralai.models import SDKError
 import time
 import random
 import os
@@ -26,6 +27,7 @@ class State(TypedDict):
     report_data: str
 
 def scraper(state:State):
+    print(f"================= SCRAPE {state['current_link']}=================")
     link = state['current_link']
     if link:
         return {'context':scrape_this_site(state['current_link'])}
@@ -33,36 +35,56 @@ def scraper(state:State):
 
 # Validate the context
 def validate_context(state: State):
+    print("================= VALIDATE CONTEXT STARTED =================")
     prompt = (
         f"You're given this interview context:\n\n{state['context']}\n\n"
         "Without generating the questions, just answer Yes or No: Can at least 10 relevant interview questions "
         "be made from this content?"
     )
+    retries = 2
+    delay = 61 
     client = Mistral(api_key=os.getenv('MISTRAL_API_KEY'))
-    msg = client.chat.complete(
-        model="mistral-small-latest",
-        messages=[{"role": "user", "content": prompt}]
-    ).choices[0].message.content
-    answer = msg.strip().lower()
-    return {"is_valid": "yes" in answer}
+    for attempt in range(retries):
+        try:
+            response = client.chat.complete(
+                model="mistral-small-latest",
+                messages=[{"role": "user", "content": prompt}]
+            )
+            answer = response.choices[0].message.content.strip().lower()
+            return {"is_valid": "yes" in answer}
+        
+        except SDKError as e:
+            if e.status_code == 429:
+                print(f"Rate limited (429). Retry {attempt+1}/{retries} after {delay} seconds...")
+                time.sleep(delay)
+                delay *= 2  # optional: exponential backoff
+            else:
+                print(f"SDKError: {e.status_code} - {e.message}")
+                break
+        except Exception as e:
+            print(f"Unexpected error: {e}")
+            break
+    return {"is_valid": False}
 
 # Router node to check if context is valid or not
 def context_check_router(state: State):
-    if state["retry_count"] > 1:
+    print("================= ROUTING CHECK =================")
+    if state["retry_count"] >= 1:
         # Stop the process if retry count is 1 (end without QA generation)
         return "End"
     return "Valid" if state["is_valid"] else "Invalid"
 
 # Fetch a new link from web API if the context is invalid
 def fetch_alternative_link(state: State):
+    print("================= CHOSEN ROUTE : ALTERNATE LINK =================")
     # Increase retry count after each invalid context
     skill = state['skill']
     exclude_domains = state.get("exclude_domains", [])
     exclude_domains.append(state.get("current_link", ""))  # Add the current link to exclude list
     
     # Call the web API to get a new link
-    new_links = web_api(skill, exclude_domains=exclude_domains)
-    new_link = new_links.get(skill, [])[0]  # Get the first URL from the response
+    new_links = web_api(skill, exclude_domains=exclude_domains).get(skill, [])
+    new_link = new_links[0] if new_links else None  # Get the first URL from the response
     
     if not new_link:
         print("No new links found.")
@@ -76,6 +98,7 @@ def fetch_alternative_link(state: State):
 
 # Generate QAs from the provided context
 def generate_qa(state: State):
+    print("================= QA GENERATION =================")
     try:
         return {"qa_pairs": qa_llm(state['context'])} 
     except Exception as e:
@@ -83,6 +106,7 @@ def generate_qa(state: State):
         return {"qa_pairs": []}
 
 def validate_qa(state: State):
+    print("================= FINAL VALIDATION =================")
     _doc_splitter = doc_splitter()
     # core validation functionality using cohere ranker
     ranker = CohereRanker()
@@ -125,7 +149,8 @@ def lang_qa_pipeline():
     workflow.add_edge("scrape_site", "validate_context")
     workflow.add_conditional_edges("validate_context", context_check_router, {
         "Valid": "generate_qa",
-        "Invalid": "fetch_alternative_link"
+        "Invalid": "fetch_alternative_link",
+        "End": END
     })
     workflow.add_edge("fetch_alternative_link", "scrape_site")  # Go back to validation after first retry
     workflow.add_edge("generate_qa", "validate_qa")

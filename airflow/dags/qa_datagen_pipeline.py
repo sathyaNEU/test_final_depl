@@ -22,13 +22,19 @@ with DAG(
         return links_conf
 
     @task
-    def qa_using_llm(links):
+    def qa_using_llm(state):
+        links = state['qa_data']
         for skill, _links in links.items():
             skill = skill.lower()
+            print(f'================== {skill} ==================')
             for link in _links:
+                skill_exists = is_skill_exist_via('SOURCE', link)
+                if skill_exists:
+                    print(f"{skill} exists in the form of {link} in sf, hence skipping")
                 if not is_skill_exist_via('SOURCE', link):
                     input_state = {
                         "skill" : skill,
+                        "insert_data":[],
                         "current_link": link,
                         "exclude_domains": [],
                         "retry_count": 0  # Start with 0 retries
@@ -41,7 +47,9 @@ with DAG(
                         print("{} -> loaded {} rows".format(skill, row_count))
                     else:
                         print("Agent tried to look for alternatives, unfortunately the data from web, did not meet the platform standards")
-    links = extract_links()
-    qa_using_llm(links) 
+        return None
+    
+    state = extract_links()
+    qa_using_llm(state) 
     
     

@@ -40,3 +40,30 @@ def is_skill_exist_via(column, data):
     cursor.close()
     return data>0
 
+def upsert_qa_pipeline_status(user_email, dag_id, dag_run_id, status):
+    conn = sf_client()
+    cursor = conn.cursor()
+    select_query = """
+        SELECT COUNT(*) AS count FROM QA_PIPELINE_STATUS WHERE DAG_RUN_ID = %s
+    """
+    insert_query = """
+        INSERT INTO QA_PIPELINE_STATUS (USER_EMAIL, DAG_ID, DAG_RUN_ID, STATUS)
+        VALUES (%s, %s, %s, %s)
+    """
+    update_query = """
+        UPDATE QA_PIPELINE_STATUS SET STATUS = %s
+        WHERE DAG_RUN_ID = %s
+    """
+    try:
+        count_df = cursor.execute(select_query, (dag_run_id,)).fetch_pandas_all()
+        record_exists = count_df.iloc[0]['COUNT'] > 0
+        if record_exists:
+            cursor.execute(update_query, (status, dag_run_id))
+        else:
+            cursor.execute(insert_query, (user_email, dag_id, dag_run_id, status))
+    except Exception as e:
+        print(f"Error updating pipeline status: {str(e)}")
+    finally:
+        cursor.close()
+        conn.close()
+
