@@ -1,10 +1,6 @@
 from typing_extensions import TypedDict
-from firecrawl import FirecrawlApp
 from langgraph.graph import StateGraph, START, END
-from dotenv import load_dotenv
-from IPython.display import Image, display
 from mistralai import Mistral
-import json
 import time
 import random
 import os
@@ -14,8 +10,8 @@ from utils.haystack.pipeline import doc_splitter
 from utils.llm.core import generate_qa as qa_llm
 from haystack_integrations.components.rankers.cohere import CohereRanker
 from haystack.dataclasses.byte_stream import ByteStream
-
-client = Mistral(api_key=os.getenv('MISTRAL_API_KEY'))
+from dotenv import load_dotenv
+load_dotenv()
 
 # Define shared state
 class State(TypedDict):
@@ -42,6 +38,7 @@ def validate_context(state: State):
         "Without generating the questions, just answer Yes or No: Can at least 10 relevant interview questions "
         "be made from this content?"
     )
+    client = Mistral(api_key=os.getenv('MISTRAL_API_KEY'))
     msg = client.chat.complete(
         model="mistral-small-latest",
         messages=[{"role": "user", "content": prompt}]

@@ -74,7 +74,7 @@
       AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: 'true'
       # WARNING: Use _PIP_ADDITIONAL_REQUIREMENTS option ONLY for a quick checks
       # for other purpose (development, test and especially production usage) build/extend Airflow image.
-      _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:- langgraph, langchain, mistralai haystack-ai cohere-haystack mdit_plain markdown-it-py nltk boto3 python-dotenv selenium beautifulsoup4 apache-airflow-providers-google pydantic snowflake-connector-python google-genai firecrawl}
+      _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:- tavily-python langgraph langchain mistralai haystack-ai cohere-haystack mdit_plain markdown-it-py nltk boto3 python-dotenv selenium beautifulsoup4 apache-airflow-providers-google pydantic snowflake-connector-python google-genai firecrawl}
       # The following line can be used to set a custom config file, stored in the local config folder
       # If you want to use it, outcomment it and replace airflow.cfg with the name of your config file
       # AIRFLOW_CONFIG: '/opt/airflow/config/airflow.cfg'
