@@ -1,18 +1,14 @@
-from datetime import datetime
-from airflow.models import Variable
 from google import genai
 from google.genai import types
-import base64
 from google import genai
 from google.genai import types
-import base64
-from utils.llm.prompt import sys_skill_extract_prompt
 import json
 from airflow.hooks.base import BaseHook
 from google.oauth2 import service_account
 import google.auth.transport.requests
-
-
+from utils.prompts import sys_qa_datagen_prompt, user_qa_datagen_prompt
+from utils.schema import validate_qa_data
+from utils.llm.prompt import sys_skill_extract_prompt
 import logging
 
 logging.basicConfig(
@@ -101,4 +97,56 @@ def llm(description):
 
   
   return data['technical_skills']
-  
+
+
+def generate_qa(site_as_md):
+    client = genai.Client(
+      vertexai=True,
+      project="bigdata-456820",
+      location="us-central1",
+      credentials = get_vertexai_credentials()
+    )
+
+    model = "gemini-2.5-pro-exp-03-25"
+    contents = [
+    types.Content(
+      role="user",
+      parts=[
+        types.Part.from_text(text=user_qa_datagen_prompt.format(site_as_md))
+      ]
+    ),
+    ]
+    generate_content_config = types.GenerateContentConfig(
+        temperature = 1,
+        top_p = 0.95,
+        max_output_tokens = 30000,
+        response_modalities = ["TEXT"],
+        safety_settings = [types.SafetySetting(
+        category="HARM_CATEGORY_HATE_SPEECH",
+        threshold="OFF"
+        ),types.SafetySetting(
+        category="HARM_CATEGORY_DANGEROUS_CONTENT",
+        threshold="OFF"
+        ),types.SafetySetting(
+        category="HARM_CATEGORY_SEXUALLY_EXPLICIT",
+        threshold="OFF"
+        ),types.SafetySetting(
+        category="HARM_CATEGORY_HARASSMENT",
+        threshold="OFF"
+        )],
+        response_mime_type = "application/json",
+        system_instruction=[types.Part.from_text(text=sys_qa_datagen_prompt)],
+    )
+
+    response = client.models.generate_content(
+        model = model,
+        contents = contents,
+        config = generate_content_config,
+    )
+    response_json = json.loads(response.candidates[0].content.parts[0].text)
+    validated_data = validate_qa_data(response_json)
+    if isinstance(validated_data, list) and len(validated_data)==0:
+        return -1
+    if 'qa_pairs' not in validated_data:
+        return -1     
+    return validated_data['qa_pairs']

@@ -4,7 +4,7 @@ from airflow.operators.python import get_current_context
 from datetime import datetime
 from utils.firecrawl.core import scrape_this_site
 from utils.snowflake.core import write_qa, is_skill_exist_via
-from utils.gcp.vertex import generate_qa
+from utils.llm.core import generate_qa
 from utils.s3.core import get_s3_client, write_markdown_to_s3
 from utils.haystack.pipeline import doc_splitter
 from haystack_integrations.components.rankers.cohere import CohereRanker
@@ -12,6 +12,8 @@ from haystack.dataclasses.byte_stream import ByteStream
 import time
 from uuid import uuid4
 import random
+from dotenv import load_dotenv
+load_dotenv()
 
 with DAG(
     dag_id='qa_pipeline',
