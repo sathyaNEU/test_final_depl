@@ -150,3 +150,5 @@ def generate_qa(site_as_md):
     if 'qa_pairs' not in validated_data:
         return -1     
     return validated_data['qa_pairs']
+  
+  
