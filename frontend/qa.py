@@ -157,7 +157,7 @@ def display_qa_form(questions, dag_run_id):
         for q in questions:
             question_id = str(q.get("ID", ""))
             answer_key = f"answer_{question_id}"
-            
+              
             # Get the value from the text area
             if answer_key in st.session_state:
                 # Only store non-empty answers
@@ -185,3 +185,4 @@ def display_qa_form(questions, dag_run_id):
                     st.markdown(response['markdown'])
                 else:
                     st.error("Failed to generate report. Please try again.")
+

@@ -459,7 +459,8 @@ def validate_and_generate_report(request: qaValidateWrapper):
             'status_code': 200,
             'markdown': markdown_str
         }
-
+    
+    
     except Exception as e:
         raise HTTPException(
             status_code=500,

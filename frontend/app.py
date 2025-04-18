@@ -1419,7 +1419,8 @@ def main_app():
         run_jobs_page()  # Run the jobs page functionality
     elif current_page == "qa":
         qa_page()
-
+ 
+ 
 
 # Main app logic
 def main():
