@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from pathlib import Path
 from static import helper
 import logging
-from functools import lru_cache
+from datetime import datetime, timedelta
 
 
 logging.basicConfig(
@@ -33,95 +33,10 @@ os.makedirs(PREVIEW_DIR, exist_ok=True)
 
 # Cache for API responses to reduce redundant API calls
 CACHE = {}
-
-# Gemini System Prompt for Resume Editing
-RESUME_EDITOR_INSTRUCTIONS = """
-You are a resume assistant that helps users edit their portfolio JSON data. 
-Your task is to update a JSON resume based on the user's instructions.
-
-The JSON resume has the following structure:
-{
-  "about": {
-    "name": "Full Name",
-    "location": "City, State",
-    "email": "email@example.com",
-    "phone": "Phone number",
-    "linkedin_hyperlink": "LinkedIn URL",
-    "github_hyperlink": "GitHub URL",
-    "summary": "Professional summary paragraph"
-  },
-  "education": [
-    {
-      "university": "University Name",
-      "location": "University Location",
-      "degree": "Degree Name",
-      "period": "Month Year - Month Year",
-      "related_coursework": ["Course 1", "Course 2", "Course 3"],
-      "gpa": "GPA Value"
-    }
-  ],
-  "skills": [
-    {
-      "category": "Category Name",
-      "skills": ["Skill 1", "Skill 2", "Skill 3"]
-    }
-  ],
-  "experience": [
-    {
-      "company": "Company Name",
-      "position": "Job Title",
-      "location": "Job Location",
-      "period": "Month Year - Month Year",
-      "responsibilities": ["Responsibility 1", "Responsibility 2", "Responsibility 3"]
-    }
-  ],
-  "projects": [
-    {
-      "name": "Project Name",
-      "description": "Project description",
-      "technologies": ["Tech 1", "Tech 2", "Tech 3"],
-      "url": "Project URL"
-    }
-  ],
-  "accomplishments": [
-    {
-      "title": "Accomplishment Title",
-      "date": "Month Year",
-      "link": "Relevant URL"
-    }
-  ]
-}
-
-Follow these rules:
-1. Maintain the exact JSON structure - do not add or remove any top-level keys
-2. Format dates consistently as "Month Year" (e.g., "January 2023")
-3. Return ONLY valid JSON without any other text or explanations
-4. Make sure comma placement is correct and the JSON will parse properly
-5. Preserve information that the user doesn't explicitly ask to change
-6. Use proper capitalization and professional language
-7. For lists (like skills, responsibilities), maintain them as valid JSON arrays
-8. If adding a new item to an array (like a new job or project), follow the same structure as existing items
-
-If the user asks to add a new entry (education, job, project, etc.), create a complete entry with all required fields.
-If any fields would be empty, use reasonable placeholder text that the user can edit later.
-"""
-
 # -----------------
 # HELPER FUNCTIONS
 # -----------------
 
-@lru_cache(maxsize=32)
-def get_gemini_model():
-    """Get a cached Gemini model instance to avoid recreating it"""
-    return genai.GenerativeModel(
-        model_name="gemini-1.5-pro",
-        generation_config={
-            "temperature": 0.2,
-            "top_p": 0.8,
-            "top_k": 40,
-            "max_output_tokens": 8192,
-        }
-    )
 
 def run_async(func, callback=None):
     """Run a function asynchronously with improved error handling"""
@@ -211,16 +126,21 @@ def login(email, password):
     """Login user and get token"""
     response = APIClient.request("login", method="post", data={"user_email": email, "password": password})
     if response:
+        st.write(response)
         # Store user session data
         st.session_state.user_email = email
+        
         st.session_state.is_authenticated = True
         
         # Set user data from response
         user_data = response["user_data"]
+        st.session_state.user_name = user_data["NAME"]
+
         if user_data["UI_ENDPOINT"] == "null":
             st.session_state.is_site_hosted = False
         else:
             st.session_state.is_site_hosted = user_data["UI_ENDPOINT"]
+
         
         if user_data["UI_ENDPOINT"]:
             st.session_state.site_url = user_data["UI_ENDPOINT"]
@@ -597,7 +517,19 @@ def create_llm_based_editor(resume_data):
     return st.session_state.edited_resume
 
 def login_page():
-    """Display login page and handle authentication"""
+
+    # Hide default sidebar
+    st.markdown(
+        """
+        <style>
+        [data-testid="stSidebar"] {
+            display: none;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
     st.title("🌐 Portfolio Website Builder")
     st.subheader("Login to access your portfolio")
     
@@ -662,17 +594,11 @@ def show_non_blocking_progress(key="progress", steps=100, time_per_step=0.40):
     elapsed = time.time() - st.session_state[f"{key}_start_time"]
     expected_progress = min(int(elapsed / time_per_step), steps)
     
-    # Only update progress if it's increased and enough time has passed since last update
-    current_time = time.time()
-    update_interval = 0.5  # Limit updates to every 0.5 seconds to reduce reruns
+    # Always update progress to show something is happening
+    st.session_state[f"{key}_progress"] = expected_progress
     
-    if (expected_progress > st.session_state[f"{key}_progress"] and 
-        current_time - st.session_state.get(f"{key}_last_update", 0) > update_interval):
-        st.session_state[f"{key}_progress"] = expected_progress
-        st.session_state[f"{key}_last_update"] = current_time
-    
-    # Display progress bar
-    progress = st.progress(st.session_state[f"{key}_progress"] / steps)
+    # Display progress bar - WITHOUT key parameter
+    progress_bar = st.progress(st.session_state[f"{key}_progress"] / steps)
     
     # Check if completed
     if st.session_state[f"{key}_progress"] >= steps and not st.session_state[f"{key}_completed"]:
@@ -721,24 +647,18 @@ def handle_deployment_ui(is_new_user=False):
         st.info("GitHub Pages deployment in progress...")
         completed = show_non_blocking_progress(deployment_key, 100, 0.40)
         
-        # Check if we need to rerun the app to update progress
-        current_time = time.time()
-        last_rerun_key = f"{deployment_key}_last_rerun"
-        
-        # Initialize last rerun time if it doesn't exist
-        if last_rerun_key not in st.session_state:
-            st.session_state[last_rerun_key] = current_time - 1.0  # Set to 1 second ago
-        
         # Check if deployment result is available
         if "deployment_url" in st.session_state:
+            # Force state update if URL is available
             st.session_state.deployment_complete = True
             st.session_state.deployment_completed = True
-            # No need to rerun - completed state will be handled on next iteration
-        elif not completed and current_time - st.session_state[last_rerun_key] > 0.5:
-            # Limit reruns to every 0.5 seconds
-            st.session_state[last_rerun_key] = current_time
-            time.sleep(0.1)  # Short sleep to prevent too frequent reruns
-            st.rerun()
+            st.rerun()  # Force rerun to show completion UI
+        elif completed:
+            # Check if we have a URL but the states weren't updated
+            if st.session_state.get("site_url"):
+                st.session_state.deployment_complete = True
+                st.session_state.deployment_completed = True
+                st.rerun()
 
 def deploy_existing_user_portfolio():
     """Handle deployment flow for existing users"""
@@ -765,6 +685,15 @@ def deploy_existing_user_portfolio():
             st.session_state.deployment_complete = False
             st.session_state.deployment_completed = False
             st.session_state.deployment_error = False
+            st.session_state.show_progress = True
+            
+            # Important: reset progress tracking
+            if "deployment_start_time" in st.session_state:
+                del st.session_state["deployment_start_time"]
+            if "deployment_progress" in st.session_state:
+                del st.session_state["deployment_progress"]
+            if "deployment_completed" in st.session_state:
+                del st.session_state["deployment_completed"]
             
             # Start asynchronous deployment
             deploy_portfolio(
@@ -776,9 +705,6 @@ def deploy_existing_user_portfolio():
             
             # Display initial message
             st.info("Deployment started! This will take approximately 40 seconds...")
-            
-            # Set a placeholder for progress bar (will appear on next rerun)
-            st.session_state.show_progress = True
             st.rerun()
         
         # Add a button to go back to editing
@@ -789,8 +715,62 @@ def deploy_existing_user_portfolio():
             st.session_state.show_deployment_screen = False
             st.rerun()
     else:
-        # Handle deployment UI states
-        handle_deployment_ui(is_new_user=False)
+        # Force the progress bar to run for at least 10 seconds even if deployment is instant
+        # Modify this section to force a minimum display time
+        st.info("GitHub Pages deployment in progress...")
+        
+        # Get the current time
+        current_time = time.time()
+        
+        # Initialize start time if not set
+        if "deployment_start_time" not in st.session_state:
+            st.session_state.deployment_start_time = current_time
+            st.session_state.deployment_shown_completion = False
+        
+        # Calculate elapsed time
+        elapsed_time = current_time - st.session_state.deployment_start_time
+        
+        # We want to show the progress bar for at least 10 seconds
+        min_progress_time = 20.0  # seconds
+        
+        # Check if we have a URL but haven't shown completion long enough
+        has_url = "deployment_url" in st.session_state or "site_url" in st.session_state
+        
+        if has_url and elapsed_time < min_progress_time:
+            # Still show progress bar until min time has passed
+            progress_value = min(0.95, elapsed_time / min_progress_time)
+            st.progress(progress_value)
+            
+            # Schedule a rerun to update the progress
+            time.sleep(0.1)
+            st.rerun()
+        
+        elif has_url or elapsed_time >= min_progress_time:
+            # Either we have the URL or enough time has passed
+            url = st.session_state.get("deployment_url") or st.session_state.get("site_url")
+            
+            # Complete the progress bar
+            st.progress(1.0)
+            
+            # Show completion message
+            st.success("✅ Portfolio successfully deployed!")
+            st.subheader("Your Portfolio Website")
+            st.markdown(f"**Portfolio URL:** [🔗 {url}]({url})")
+            st.markdown("**Note:** GitHub Pages may take a few minutes to fully activate. If the link doesn't work immediately, please wait a few minutes and try again.")
+            
+            # Only show balloons once
+            if not st.session_state.get("deployment_balloons_shown", False):
+                st.balloons()
+                st.session_state.deployment_balloons_shown = True
+            
+            # Button to go back to editing
+            if st.button("← Back to Editing", key="back_to_edit_after_deploy"):
+                st.session_state.show_deployment_screen = False
+                st.rerun()
+        else:
+            # No URL yet and still within min time, show normal progress
+            progress = show_non_blocking_progress("deployment", 100, 0.40)
+
 
 def deploy_new_user_portfolio(repo_name_input):
     """Handle deployment flow for new users"""
@@ -835,23 +815,8 @@ def deploy_new_user_portfolio(repo_name_input):
         # Handle deployment UI states
         handle_deployment_ui(is_new_user=True)
 
-def main_app():
-    """Main application after login"""
-    st.title("🌐 Resume → Portfolio Website Generator")
-    
-    # Display user info in sidebar
-    st.sidebar.markdown(f"### Welcome, {st.session_state.user_email}")
-    
-    # If user has a hosted site, show the link
-    if st.session_state.is_site_hosted:
-        st.sidebar.markdown("### Your Portfolio")
-        st.sidebar.markdown(f"🔗 [View your portfolio]({st.session_state.site_url})")
-        st.sidebar.markdown(f"Repository: {st.session_state.repo_name}")
-    
-    if st.sidebar.button("Logout"):
-        for key in list(st.session_state.keys()):
-            del st.session_state[key]
-        st.rerun()
+def render_portfolio_editor():
+    # """Render the portfolio editor page"""
     
     # Determine workflow based on whether user has a hosted site
     if st.session_state.is_site_hosted:
@@ -1045,29 +1010,372 @@ def main_app():
                 else:
                     st.warning("Please upload your resume, edit it, and select a theme first.")
 
-        # Display current step progress for new users
-        current_step = st.session_state.active_tab + 1
-        total_steps = 3
-        st.sidebar.progress(current_step / total_steps)
-        st.sidebar.write(f"**Current Progress**: Step {current_step} of {total_steps}")
-        st.sidebar.write(f"**Current Step**: {tab_titles[st.session_state.active_tab]}")
 
-        # Add next step instructions for new users
-        if st.session_state.active_tab < 2:
-            next_step = tab_titles[st.session_state.active_tab + 1]
-            st.sidebar.info(f"**Next step**: {next_step}")
+def render_sidebar():
+    """Create and handle the sidebar navigation"""
+    # Clear any existing sidebar elements
+    st.sidebar.empty()
+    
+    # Create sidebar header
+    st.sidebar.markdown(f"### Welcome, {st.session_state.user_name}")
+    
+    # If user has a hosted site, show the link
+    if st.session_state.is_site_hosted:
+        st.sidebar.markdown("### Your Portfolio")
+        st.sidebar.markdown(f"🔗 [View your portfolio]({st.session_state.site_url})")
+        st.sidebar.markdown(f"Repository: {st.session_state.repo_name}")
+    
+    # Add sidebar navigation menu
+    st.sidebar.markdown("### Navigation")
+    
+    # Define available pages
+    pages = {
+        "Portfolio Editor": "editor",
+        "Job Listings": "jobs"  # This is the key for your jobs page
+    }
+    
+    # Create radio buttons for navigation with a unique key
+    selected_page = st.sidebar.radio("Go to", list(pages.keys()), key="nav_radio")
+    st.session_state.current_page = pages[selected_page]
+    
+    # For new users in portfolio editor mode, show progress if applicable
+    if st.session_state.current_page == "editor" and not st.session_state.is_site_hosted:
+        if "active_tab" in st.session_state:
+            tab_titles = ["1. Upload & Edit", "2. Choose Theme", "3. Preview & Deploy"]
+            current_step = st.session_state.active_tab + 1
+            total_steps = 3
+            st.sidebar.progress(current_step / total_steps)
+            st.sidebar.write(f"**Current Progress**: Step {current_step} of {total_steps}")
+            st.sidebar.write(f"**Current Step**: {tab_titles[st.session_state.active_tab]}")
+
+            # Add next step instructions for new users
+            if st.session_state.active_tab < 2:
+                next_step = tab_titles[st.session_state.active_tab + 1]
+                st.sidebar.info(f"**Next step**: {next_step}")
+    
+    # Add logout button at the bottom with a unique key
+    st.sidebar.markdown("---")
+    if st.sidebar.button("Logout", key="sidebar_logout_button"):
+        for key in list(st.session_state.keys()):
+            del st.session_state[key]
+        st.rerun()
+    
+    return st.session_state.current_page
+def run_jobs_page():
+    """Run the jobs page functionality without calling set_page_config"""
+    try:
+        # Import necessary libraries
+        import datetime
+        import pandas as pd
+        import requests
+        import json
+        
+        # Add CSS
+        from helper import css
+        st.markdown(css, unsafe_allow_html=True)
+        
+        # Display the header
+        st.markdown("<h1 class='app-header'>🔍 Latest Job Listings</h1>", unsafe_allow_html=True)
+        st.markdown("<p class='app-subtitle'>Find the latest job openings matching your skills and preferences</p>", unsafe_allow_html=True)
+        
+        # Initialize session state
+        if 'first_load' not in st.session_state:
+            st.session_state.first_load = True
+            st.session_state.jobs_data = None
+            st.session_state.selected_role = "All Roles"
+            st.session_state.selected_time = "All Time"
+            st.session_state.selected_seniority = "All Levels"
+            st.session_state.selected_employment = "All Types"
+            st.session_state.filters_applied = False
+            st.session_state.filter_pending = False
+            st.session_state.interview_prep_job = None
+        
+        # Define helper functions
+        def format_datetime(dt):
+            """Format datetime for display"""
+            if pd.isnull(dt):
+                return "N/A"
+            
+            now = datetime.datetime.now()
+            delta = now - dt
+            
+            if delta.days == 0:
+                if delta.seconds < 60:
+                    return "Just now"
+                elif delta.seconds < 3600:
+                    minutes = delta.seconds // 60
+                    return f"{minutes} minute{'s' if minutes > 1 else ''} ago"
+                else:
+                    hours = delta.seconds // 3600
+                    return f"{hours} hour{'s' if hours > 1 else ''} ago"
+            elif delta.days == 1:
+                return "Yesterday"
+            elif delta.days < 7:
+                return f"{delta.days} days ago"
+            else:
+                return dt.strftime("%b %d, %Y")
+        
+        def parse_skills(skills_str):
+            """Parse skills string into a list"""
+            if pd.isna(skills_str) or not skills_str:
+                return []
+            
+            try:
+                return json.loads(skills_str)
+            except:
+                return [skill.strip() for skill in skills_str.split(",") if skill.strip()]
+        
+        # Add sidebar filters
+        st.sidebar.title("Filter Options")
+        
+        role_options = ["All Roles", "data_engineer", "data_scientist", "software_engineer"]
+        selected_role = st.sidebar.selectbox(
+            "Job Role",
+            role_options,
+            index=role_options.index(st.session_state.selected_role) if st.session_state.selected_role in role_options else 0,
+        )
+        
+        seniority_options = [
+            "All Levels", "Entry level", "Associate", "Internship", 
+            "Mid-Senior level", "Director", "Not Applicable"
+        ]
+        selected_seniority = st.sidebar.selectbox(
+            "Seniority Level",
+            seniority_options,
+            index=seniority_options.index(st.session_state.selected_seniority) if st.session_state.selected_seniority in seniority_options else 0,
+        )
+        
+        employment_options = ["All Types", "Full-time", "Part-time", "Contract"]
+        selected_employment = st.sidebar.selectbox(
+            "Employment Type",
+            employment_options,
+            index=employment_options.index(st.session_state.selected_employment) if st.session_state.selected_employment in employment_options else 0,
+        )
+        
+        time_options = [
+            "All Time",
+            "Last 30 minutes", 
+            "Last hour", 
+            "Last 2 hours", 
+            "Last 3 hours",
+            "Last 4 hours"
+        ]
+        selected_time = st.sidebar.selectbox(
+            "Posted Within",
+            time_options,
+            index=time_options.index(st.session_state.selected_time) if st.session_state.selected_time in time_options else 0,
+        )
+        
+        filters_changed = (
+            selected_role != st.session_state.selected_role or
+            selected_time != st.session_state.selected_time or
+            selected_seniority != st.session_state.selected_seniority or
+            selected_employment != st.session_state.selected_employment
+        )
+        
+        if filters_changed:
+            st.session_state.filter_pending = True
+        
+        if st.sidebar.button("Apply Filters", key="apply_filters") or st.session_state.filters_applied == False:
+            st.session_state.selected_role = selected_role
+            st.session_state.selected_time = selected_time
+            st.session_state.selected_seniority = selected_seniority
+            st.session_state.selected_employment = selected_employment
+            st.session_state.filters_applied = True
+            st.session_state.filter_pending = False
+        
+        if st.sidebar.button("Reset Filters", key="reset_filters"):
+            st.session_state.selected_role = "All Roles"
+            st.session_state.selected_time = "All Time"
+            st.session_state.selected_seniority = "All Levels"
+            st.session_state.selected_employment = "All Types"
+            st.session_state.filters_applied = True
+            st.session_state.filter_pending = False
+            st.rerun()
+        
+        if st.session_state.filter_pending:
+            st.sidebar.warning("⚠️ Filter changes not applied yet. Click 'Apply Filters' to update results.")
+        
+        # Process API parameters
+        api_role = None if st.session_state.selected_role == "All Roles" else st.session_state.selected_role
+        api_seniority = None if st.session_state.selected_seniority == "All Levels" else st.session_state.selected_seniority
+        api_employment = None if st.session_state.selected_employment == "All Types" else st.session_state.selected_employment
+        
+        api_time = None
+        if st.session_state.selected_time == "Last 30 minutes":
+            api_time = "30min"
+        elif st.session_state.selected_time == "Last hour":
+            api_time = "1hr"
+        elif st.session_state.selected_time == "Last 2 hours":
+            api_time = "2hr" 
+        elif st.session_state.selected_time == "Last 3 hours":
+            api_time = "3hr"
+        elif st.session_state.selected_time == "Last 4 hours":
+            api_time = "4hr"
+        
+        # Load job listings
+        if st.session_state.first_load or st.session_state.jobs_data is None:
+            with st.spinner("Loading job listings..."):
+                # Call API directly
+                API_URL = "http://localhost:8000"
+                response = requests.get(f'{API_URL}/all-jobs-api/')
+                
+                if response.status_code == 200:
+                    response_json = response.json()
+                    
+                    # Properly handle the response structure
+                    if "jobs" in response_json:
+                        jobs_dict = response_json["jobs"]
+                    elif "data" in response_json:
+                        jobs_dict = response_json["data"]
+                    else:
+                        jobs_dict = []
+                    
+                    all_jobs_df = pd.DataFrame(jobs_dict)
+                    
+                    if not all_jobs_df.empty and "POSTED_DATE" in all_jobs_df.columns:
+                        all_jobs_df["POSTED_DATE"] = pd.to_datetime(all_jobs_df["POSTED_DATE"])
+                    
+                    st.session_state.jobs_data = all_jobs_df
+                    st.session_state.first_load = False
+                else:
+                    st.error(f"API Error: {response.status_code} for url: {API_URL}/all-jobs-api/")
+                    st.session_state.jobs_data = pd.DataFrame()
+        
+        # Display job listings
+        jobs_df = None
+        if st.session_state.jobs_data is not None:
+            jobs_df = st.session_state.jobs_data.copy()
+            
+            if api_role and not jobs_df.empty and "JOB_ROLE" in jobs_df.columns:
+                jobs_df = jobs_df[jobs_df["JOB_ROLE"] == api_role]
+            
+            if api_seniority and not jobs_df.empty and "SENIORITY_LEVEL" in jobs_df.columns:
+                jobs_df = jobs_df[jobs_df["SENIORITY_LEVEL"].fillna("Not Applicable") == api_seniority]
+            
+            if api_employment and not jobs_df.empty and "EMPLOYMENT_TYPE" in jobs_df.columns:
+                jobs_df = jobs_df[jobs_df["EMPLOYMENT_TYPE"].fillna("Not Applicable") == api_employment]
+            
+            if api_time and not jobs_df.empty and "POSTED_DATE" in jobs_df.columns:
+                hours_map = {
+                    "30min": 0.5,
+                    "1hr": 1,
+                    "2hr": 2,
+                    "3hr": 3,
+                    "4hr": 4
+                }
+                hours = hours_map.get(api_time, 0)
+                if hours > 0:
+                    cutoff_time = datetime.datetime.now() - datetime.timedelta(hours=hours)
+                    jobs_df = jobs_df[jobs_df["POSTED_DATE"] >= cutoff_time]
+            
+            # Show applied filters as tags
+            filter_tags = []
+            if api_role:
+                filter_tags.append(f"Role: {api_role}")
+            if api_seniority:
+                filter_tags.append(f"Level: {api_seniority}")
+            if api_employment:
+                filter_tags.append(f"Type: {api_employment}")
+            if api_time:
+                filter_tags.append(f"Time: {st.session_state.selected_time}")
+                
+            if filter_tags:
+                filter_html = "<div class='filter-tags'><strong>Active Filters:</strong> " + " ".join([f"<span class='filter-tag'>{tag}</span>" for tag in filter_tags]) + "</div>"
+                st.markdown(filter_html, unsafe_allow_html=True)
+            
+            # Show job count and listings
+            if jobs_df.empty:
+                st.warning("No job listings found matching your criteria.")
+            else:
+                st.write(f"Found **{len(jobs_df)}** job listings")
+                
+                for idx, job in jobs_df.iterrows():
+                    job_title = job.get('TITLE') if pd.notna(job.get('TITLE')) else job.get('JOB_ROLE', 'Unknown Position')
+                    job_company = job.get('COMPANY') if pd.notna(job.get('COMPANY')) else 'Unknown Company'
+                    job_role = job.get('JOB_ROLE', '') if 'JOB_ROLE' in job else ''
+                    job_url = job.get('URL', '#')
+                    job_seniority = job.get('SENIORITY_LEVEL') if pd.notna(job.get('SENIORITY_LEVEL')) else 'Not Specified'
+                    job_employment = job.get('EMPLOYMENT_TYPE') if pd.notna(job.get('EMPLOYMENT_TYPE')) else 'Not Specified'
+                    posted_date = format_datetime(job.get('POSTED_DATE')) if pd.notna(job.get('POSTED_DATE')) else 'Unknown'
+                    
+                    skills_str = job.get('SKILLS', '')
+                    skills = parse_skills(skills_str)
+                    skills_html = ""
+                    if skills:
+                        skills_html = "".join([f"<span class='skill-tag'>{skill}</span>" for skill in skills])
+                    else:
+                        skills_html = "<em>No skills listed</em>"
+                    
+                    job_key = f"job-{idx}"
+
+                    with st.container():
+                        job_card = f"""
+                        <div class="job-card">
+                            <div class="job-title">{job_title}</div>
+                            <div class="job-company">{job_company}</div>
+                            <div class="job-meta">
+                                <span class="job-role-tag">{job_role}</span>
+                                <span style="margin-left: 10px;">{job_seniority}</span>
+                                <span style="margin-left: 10px;">{job_employment}</span>
+                            </div>
+                            <div class="job-date">Posted: {posted_date}</div>
+                            <div class="job-buttons">
+                                <a href="{job_url}" target="_blank" class="view-button">View Job Listing</a>
+                                <a href="#" onclick="event.preventDefault(); document.getElementById('prep-{job_key}').click();" class="prep-button">Prepare for Interview</a>
+                            </div>
+                        """
+
+                        # Add skills if any
+                        if skills:
+                            job_card += "<div class='skills-title'>🔧 Skills</div>"
+                            skills_html = "".join([f"<span class='skill-tag'>{skill}</span>" for skill in skills])
+                            job_card += skills_html
+                        else:
+                            job_card += "<div class='skills-title'>🔧 Skills</div><em>No skills listed</em>"
+
+                        job_card += "</div>"
+
+                        st.markdown(job_card, unsafe_allow_html=True)
+                        st.markdown("<hr style='margin: 30px 0; border: none; border-top: 1px solid #eee;'>", unsafe_allow_html=True)
+                        
+    except Exception as e:
+        st.error(f"Error running jobs page: {str(e)}")
+        import traceback
+        st.code(traceback.format_exc(), language="python")
+
+
+def main_app():
+    """Welcome, """
+    # Get the current page from sidebar navigation
+    current_page = render_sidebar()
+    
+    # Render appropriate page based on selection
+    if current_page == "editor":
+        render_portfolio_editor()  # Your existing portfolio editor function
+    elif current_page == "jobs":
+        run_jobs_page()  # Run the jobs page functionality
 
 
 # Main app logic
-st.set_page_config(page_title="Portfolio Builder", layout="wide")
+def main():
+    """Main entry point for the application"""
+    st.set_page_config(page_title="Portfolio Builder", layout="wide")
+    
+    # Initialize session state for current page
+    if "current_page" not in st.session_state:
+        st.session_state.current_page = "editor"
+    
+    # Check if user is authenticated
+    if "is_authenticated" not in st.session_state:
+        st.session_state.is_authenticated = False
+    
+    # If not authenticated, show login page
+    if not st.session_state.is_authenticated:
+        login_page()
+    else:
+        # If authenticated, show main app with navigation
+        main_app()
 
-# Check if user is authenticated
-if "is_authenticated" not in st.session_state:
-    st.session_state.is_authenticated = False
-
-# If not authenticated, show login page
-if not st.session_state.is_authenticated:
-    login_page()
-else:
-    # If authenticated, show main app
-    main_app()
+if __name__ == "__main__":
+    main()

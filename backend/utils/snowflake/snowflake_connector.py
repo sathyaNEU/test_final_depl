@@ -40,9 +40,6 @@ def get_this_column(user_email, columns):
         return dict(zip(columns, result))
 
 
-
-
-
 def update_this_column(user_email, column, data):
   conn = sf_client()
   cursor = conn.cursor()

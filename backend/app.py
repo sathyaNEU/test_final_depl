@@ -9,10 +9,16 @@ from uuid import uuid4
 from pydantic import BaseModel
 from utils.snowflake.snowflake_connector import get_this_column, update_this_column, request_to_signup
 from utils.theme_compilation.core import render_html, check_repo_exists, create_github_repo
-from typing import Optional
 import json 
 import logging
 import uvicorn
+from typing import Optional, List, Dict, Any
+import pandas as pd
+from dotenv import load_dotenv
+import traceback
+from datetime import datetime, timedelta
+from utils.suggested_jobs.core import *
+
 
 app = FastAPI()
 logging.basicConfig(
@@ -48,6 +54,28 @@ class compileModel(BaseModel):
 
 class RepoNameRequest(BaseModel):
     repo_name: str
+
+class JobFilter(BaseModel):
+        role: Optional[str] = None
+        time_filter: Optional[str] = None
+        seniority_level: Optional[str] = None
+        employment_type: Optional[str] = None
+        action: Optional[str] = None  
+    
+class InterviewPrepData(BaseModel):
+        job_role: str
+        skills: List[str]
+        job_url: str
+    
+class JobsRequest(BaseModel):
+        filter: Optional[JobFilter] = None
+        interview_prep: Optional[InterviewPrepData] = None
+
+JOBS_CACHE = {
+        "data": None,
+        "timestamp": None
+    }
+
  
 @app.post("/upload-to-gcp/")
 async def text_to_json_converter(user_email: str, file: UploadFile = File(...) ):
@@ -70,7 +98,6 @@ async def text_to_json_converter(user_email: str, file: UploadFile = File(...) )
 
 @app.post("/json-to-sf/")
 async def json_to_snowflake(requests : jsonModel):
-    
     try:
         user_email = requests.user_email
         mode = requests.mode
@@ -85,11 +112,10 @@ async def json_to_snowflake(requests : jsonModel):
 
 @app.post("/login/")
 async def login_user_if_exist(requests: loginModel):
-  
     try:
         user_email = requests.user_email
         user_password = requests.password
-        response = get_this_column(user_email,["PASSWORD", "RESUME_JSON", "UI_ENDPOINT", "THEME"])
+        response = get_this_column(user_email,["PASSWORD", "RESUME_JSON", "UI_ENDPOINT", "THEME","NAME"])
 
         if user_password == response["PASSWORD"]: 
             return {"status_code" : 200, "message":"Login successfull", "user_data": response}  
@@ -165,8 +191,6 @@ async def deploy_portfolio(deploy_data: compileModel):
         update_this_column(user_email, "UI_ENDPOINT", url)
         update_this_column(user_email, "THEME", theme)
 
-        
-
         return {
             "status_code": 200,
             "message": "Portfolio deployed successfully",
@@ -174,7 +198,6 @@ async def deploy_portfolio(deploy_data: compileModel):
         }
 
     except HTTPException as http_exc:
-        # Let FastAPI handle expected HTTP exceptions
             # logging.info(http_exc)
         raise http_exc
     except Exception as e:
@@ -184,3 +207,129 @@ async def deploy_portfolio(deploy_data: compileModel):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An error occurred during deployment. Please try again."
         )
+
+
+# ======================================== JOBS ===================================================================
+
+@app.get("/all-jobs-api/")
+def get_all_jobs_from_sf():
+
+    conn = sf_client()
+    try:
+        cursor = conn.cursor()
+
+        query = """
+        SELECT POSTED_DATE, JOB_ROLE, TITLE, COMPANY, SENIORITY_LEVEL, EMPLOYMENT_TYPE, SKILLS, URL
+        FROM JOB_HISTORY
+        WHERE POSTED_DATE >= DATEADD(hour, -5, CURRENT_TIMESTAMP())
+        ORDER BY POSTED_DATE DESC
+        """
+        cursor.execute(query)
+        results = cursor.fetchall()
+        column_names = ["POSTED_DATE", "JOB_ROLE", "TITLE", "COMPANY", "SENIORITY_LEVEL", "EMPLOYMENT_TYPE", "SKILLS", "URL"]
+        df = pd.DataFrame(results, columns=column_names)
+        data_dict = df.to_dict(orient="records") 
+        return {"status_code": 200, "data":data_dict}
+    except Exception as e:
+        logging.info(f"Error fetching jobs from Snowflake: {str(e)}")
+        logging.info(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Error fetching jobs from Snowflake: {str(e)}")
+    finally:
+        conn.close()
+
+
+
+@app.post("/jobs-api")
+async def jobs_api(request: JobsRequest):
+    """Consolidated endpoint for all job-related operations"""
+    
+    if request.filter is None:
+        request.filter = JobFilter()
+    action = request.filter.action or "filter"
+    
+    cache_needs_refresh = (
+        JOBS_CACHE["data"] is None or
+        JOBS_CACHE["timestamp"] is None or
+        (datetime.now() - JOBS_CACHE["timestamp"]).seconds > 1800
+    )
+    if action == "status":
+        return {
+            "cache_exists": JOBS_CACHE["data"] is not None,
+            "last_refresh": JOBS_CACHE["timestamp"].isoformat() if JOBS_CACHE["timestamp"] else None,
+            "job_count": len(JOBS_CACHE["data"]) if JOBS_CACHE["data"] is not None else 0,
+            "cache_age_seconds": (datetime.now() - JOBS_CACHE["timestamp"]).seconds if JOBS_CACHE["timestamp"] else None
+        }
+    elif action == "refresh":
+        try:
+            refresh_jobs_cache()
+            return {"status": "success", "message": "Cache refreshed successfully"}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error refreshing cache: {str(e)}")
+    
+    elif action == "interview-prep":
+        if not request.interview_prep:
+            raise HTTPException(status_code=400, detail="Interview prep data required for 'interview-prep' action")
+        
+        try:
+            
+            job_role = request.interview_prep.job_role
+            skills = request.interview_prep.skills
+            job_url = request.interview_prep.job_url
+            
+            return {
+                "status": "success", 
+                "message": f"Interview preparation materials for {job_role} role with focus on {', '.join(skills)} will be available soon!"
+            }
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error processing interview prep request: {str(e)}")
+    
+    elif action == "export":
+        if cache_needs_refresh:
+            try:
+                refresh_jobs_cache()
+            except Exception as e:
+                if JOBS_CACHE["data"] is None:
+                    raise HTTPException(status_code=500, detail=f"Error exporting jobs: {str(e)}")
+        try:
+            
+            filtered_df = filter_jobs(
+                JOBS_CACHE["data"],
+                role=request.filter.role,
+                time_filter=request.filter.time_filter,
+                seniority_level=request.filter.seniority_level,
+                employment_type=request.filter.employment_type
+            )
+
+            csv_str = filtered_df.to_csv(index=False)
+            
+            return {"csv_data": csv_str}
+        
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error exporting jobs: {str(e)}")
+    else:  
+        if cache_needs_refresh:
+            try:
+                refresh_jobs_cache()
+            except Exception as e:
+                
+                if JOBS_CACHE["data"] is None:
+                    raise HTTPException(status_code=500, detail=f"Error fetching jobs: {str(e)}")
+        try:
+            
+            filtered_df = filter_jobs(
+                JOBS_CACHE["data"],
+                role=request.filter.role,
+                time_filter=request.filter.time_filter,
+                seniority_level=request.filter.seniority_level,
+                employment_type=request.filter.employment_type
+            )
+            
+            jobs_list = filtered_df.to_dict(orient="records")
+            
+            for job in jobs_list:
+                if isinstance(job["POSTED_DATE"], pd.Timestamp) or isinstance(job["POSTED_DATE"], datetime):
+                    job["POSTED_DATE"] = job["POSTED_DATE"].isoformat()
+            
+            return {"jobs": jobs_list}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error retrieving jobs: {str(e)}")
