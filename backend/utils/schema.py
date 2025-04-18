@@ -1,7 +1,28 @@
 import os
 import google.generativeai as genai
 from google.ai.generativelanguage_v1beta.types import content
+from pydantic import BaseModel, ValidationError
+from typing import List
+ 
 
+
+class QAReviewItem(BaseModel):
+    id: int
+    review: str
+   
+class QAValidationOutput(BaseModel):
+    reviews: List[QAReviewItem]
+
+
+def validate_qa_data(qa_response):
+    try:
+        # Attempt to validate and create a QAList object
+        validated = QAValidationOutput(**qa_response)
+        return validated.model_dump()  # Return the validated data as a dictionary
+    except ValidationError:
+        # If validation fails, return an empty list and handle appropriately in the calling function
+        return []
+ 
 
 
 def resume_json_schema():

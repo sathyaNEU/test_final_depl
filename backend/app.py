@@ -1,13 +1,14 @@
 from fastapi import FastAPI, File, UploadFile, HTTPException, status
 from utils.resume_parser.core import *
 from utils.gcp.cloud_storage import upload_file, upload_json, generate_signed_url, get_gcp_credentials
+from utils.gcp.llm import judge_qa
 import os 
 from utils.resume_parser.core import * 
 from google.oauth2 import service_account
 from google.cloud import storage
 from uuid import uuid4
 from pydantic import BaseModel
-from utils.snowflake.snowflake_connector import get_this_column, update_this_column, request_to_signup
+from utils.snowflake.snowflake_connector import get_this_column, update_this_column, request_to_signup, pipeline_status, get_qa, map_user_answers
 from utils.theme_compilation.core import render_html, check_repo_exists, create_github_repo
 import json 
 import logging
@@ -18,6 +19,7 @@ from dotenv import load_dotenv
 import traceback
 from datetime import datetime, timedelta
 from utils.suggested_jobs.core import *
+from utils.helper import *
 
 
 app = FastAPI()
@@ -32,7 +34,7 @@ secrets_json = get_gcp_credentials()
 credentials = service_account.Credentials.from_service_account_info(secrets_json)
 client = storage.Client(credentials=credentials)
 
-
+  
 class jsonModel(BaseModel):
     changes : Optional[str] = None
     mode : str
@@ -70,6 +72,22 @@ class InterviewPrepData(BaseModel):
 class JobsRequest(BaseModel):
         filter: Optional[JobFilter] = None
         interview_prep: Optional[InterviewPrepData] = None
+
+
+class interviewPrep(BaseModel):
+    skills: list
+    job_url:str
+    user_email: str
+
+class qaValidate(BaseModel):
+    id: int
+    user_answer: str
+
+class qaValidateWrapper(BaseModel):
+    user_email: str
+    answers: Any #List[qaValidate]
+    dag_run_id : str
+
 
 JOBS_CACHE = {
         "data": None,
@@ -333,3 +351,115 @@ async def jobs_api(request: JobsRequest):
             return {"jobs": jobs_list}
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error retrieving jobs: {str(e)}")
+        
+
+
+# ===================================================Interview==============================================================
+
+
+
+@app.post("/trigger_dag/")
+def interview_prep_pipeline(request: interviewPrep):
+    user_email = request.user_email
+    job_url = request.job_url
+    skills = request.skills
+
+    # Validate input values
+    if not user_email or not job_url or not skills:
+        raise HTTPException(
+            status_code=400,
+            detail="Missing required fields: user_email, job_url, or skills"
+        )
+
+    try:
+        params = {
+            'user_email': user_email,
+            'skills': skills,
+            'mode': 'import_qa',
+            'job_url': job_url
+        }
+        trigger_dag_qa_datagen_pipeline('orchestrate_qa_pipeline', params)
+
+        return {
+            'status_code': 200,
+            'detail': 'Your request is currently in progress'
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to trigger pipeline: {str(e)}"
+        )
+    
+
+
+@app.get("/pipeline_status/")
+def get_pipeline_status(user_email):
+    if not user_email:
+        raise HTTPException(
+            status_code=400,
+            detail="Missing required fields: user_email"
+        ) 
+
+    try:
+        dag_runs = pipeline_status(user_email)
+
+        return {
+            "status_code": 200,
+            "dag_runs": dag_runs
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to fetch pipeline status: {str(e)}"
+        )         
+    
+
+@app.get("/qa/")
+def get_qa_data(dag_run_id):
+    if not dag_run_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Missing required fields: dag_run_id"
+        ) 
+
+    try:
+        questions = get_qa(dag_run_id)
+
+        return {
+            "status_code": 200,
+            "questions": questions
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to fetch pipeline status: {str(e)}"
+        )         
+    
+       
+@app.post("/qa-validation/")
+def validate_and_generate_report(request: qaValidateWrapper):
+    answers = request.answers
+    user_email = request.user_email
+    dag_run_id= request.dag_run_id
+
+    try:
+        state_before_llm = map_user_answers(answers)
+        state_after_llm = judge_qa(state_before_llm)
+
+        rrd = report_ready_data(state_before_llm, state_after_llm)
+        markdown_str = generate_quiz_report_md(user_email, 'Job Prep Quiz', rrd)
+
+        update_this_column_qa( 'REPORT_MD', markdown_str,dag_run_id)
+        return {
+            'status_code': 200,
+            'markdown': markdown_str
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to trigger pipeline: {str(e)}"
+        )
