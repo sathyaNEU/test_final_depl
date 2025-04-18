@@ -2,16 +2,17 @@ import streamlit as st
 import os
 import json
 import requests
-import tempfile
 import copy
-import google.generativeai as genai
+import re
 import time
 import threading
-from dotenv import load_dotenv
 from pathlib import Path
 from static import helper
 import logging
-from datetime import datetime, timedelta
+import pandas as pd
+import datetime
+import base64
+from qa import qa_page
 
 
 logging.basicConfig(
@@ -19,13 +20,8 @@ logging.basicConfig(
     level=logging.INFO
 )
 
-# Load environment variables
-load_dotenv()
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-API_URL = os.getenv("API_URL", "https://botfolio-apis-548112246073.us-central1.run.app") 
-
-# Configure Gemini API
-genai.configure(api_key=GEMINI_API_KEY)
+# API_URL ="https://botfolio-apis-548112246073.us-central1.run.app"
+API_URL = "http://127.0.0.1:8000"
 
 # Set up the correct path to your images
 PREVIEW_DIR = Path(__file__).parent.parent / "static" / "images"
@@ -36,27 +32,32 @@ CACHE = {}
 # -----------------
 # HELPER FUNCTIONS
 # -----------------
-
-
 def run_async(func, callback=None):
-    """Run a function asynchronously with improved error handling"""
+    """Run a function asynchronously with improved error handling and UI stability"""
     def wrapper():
         try:
-            # Small delay to ensure UI renders first
-            time.sleep(0.2)
             result = func()
+            # Use streamlit's queue system for callback to prevent UI flicker
             if callback:
-                callback(result)
+                st.session_state.async_callback_result = result
+                st.session_state.async_callback_ready = True
         except Exception as e:
             logging.error(f"Async error: {str(e)}")
-            if "async_error" not in st.session_state:
-                st.session_state.async_error = str(e)
+            st.session_state.async_error = str(e)
             if callback:
-                callback(None)
+                st.session_state.async_callback_result = None
+                st.session_state.async_callback_ready = True
     
     thread = threading.Thread(target=wrapper)
     thread.daemon = True
     thread.start()
+    
+    # Check if we need to process a callback
+    if "async_callback_ready" in st.session_state and st.session_state.async_callback_ready:
+        callback(st.session_state.async_callback_result)
+        st.session_state.async_callback_ready = False
+        del st.session_state.async_callback_result
+    
     return thread
 
 class APIClient:
@@ -121,41 +122,48 @@ class APIClient:
 # -----------------
 # AUTH FUNCTIONS
 # -----------------
-
 def login(email, password):
     """Login user and get token"""
     response = APIClient.request("login", method="post", data={"user_email": email, "password": password})
+    
     if response:
-        st.write(response)
+        # Check for error status code
+        if "status_code" in response and response["status_code"] == 401:
+            # st.error(response.get("message", "Login failed"))
+            return False
+            
         # Store user session data
         st.session_state.user_email = email
-        
         st.session_state.is_authenticated = True
         
         # Set user data from response
-        user_data = response["user_data"]
-        st.session_state.user_name = user_data["NAME"]
-
-        if user_data["UI_ENDPOINT"] == "null":
-            st.session_state.is_site_hosted = False
-        else:
-            st.session_state.is_site_hosted = user_data["UI_ENDPOINT"]
-
-        
-        if user_data["UI_ENDPOINT"]:
-            st.session_state.site_url = user_data["UI_ENDPOINT"]
-            st.session_state.repo_name = user_data["UI_ENDPOINT"].split("/")[-2]
-            st.session_state.selected_theme = user_data["THEME"]
-            st.session_state.theme_selected = True
-            resume_data = json.loads(user_data["RESUME_JSON"])
-            st.session_state.resume_data = resume_data
-            st.session_state.edited_resume = copy.deepcopy(resume_data)
+        if "user_data" in response and response["user_data"]:
+            user_data = response["user_data"]
+            st.session_state.user_name = user_data["NAME"]
             
+            if user_data["UI_ENDPOINT"] == "null":
+                st.session_state.is_site_hosted = False
+            else:
+                st.session_state.is_site_hosted = user_data["UI_ENDPOINT"]
+                
+            if user_data["UI_ENDPOINT"]:
+                st.session_state.site_url = user_data["UI_ENDPOINT"]
+                st.session_state.repo_name = user_data["UI_ENDPOINT"].split("/")[-2]
+                st.session_state.selected_theme = user_data["THEME"]
+                st.session_state.theme_selected = True
+                resume_data = json.loads(user_data["RESUME_JSON"])
+                st.session_state.resume_data = resume_data
+                st.session_state.edited_resume = copy.deepcopy(resume_data)
+                
             # Reset messages for returning users
             if "messages" in st.session_state:
                 del st.session_state.messages
-        
-        return True
+                
+            return True
+        else:
+            st.error("Invalid response format from server")
+            return False
+    
     return False
 
 def register(email, password):
@@ -168,13 +176,18 @@ def register(email, password):
         return True
     return False
 
+def contains_special_characters(s):
+    # This pattern matches any character that is NOT a-z, A-Z, 0-9, or space
+    return bool(re.search(r'[^a-zA-Z0-9 ]', s))
+
 def validate_repo_name(repo_name):
     """Check if repository name is available"""
     # Cache validation results to prevent repeated calls
     cache_key = f"validate_repo_{repo_name}"
     if cache_key in st.session_state:
         return st.session_state[cache_key]
-    
+    if contains_special_characters(repo_name):
+        return False
     response = APIClient.request("validate-repo", method="post", data={"repo_name": repo_name})
     if response:
         valid = response["valid"]
@@ -266,13 +279,14 @@ def save_resume_changes():
                     )
                     
                     if response.status_code >= 400:
-                        st.error(f"Error saving changes: {response.text}")
+                        st.error(f"Error saving changes")
                         return False
-                    
-                    # Update local copy to match what was saved
-                    st.session_state.resume_data = copy.deepcopy(st.session_state.edited_resume)
-                    logging.info("Resume changes saved successfully")
-                    return True
+                    else:         
+                        # Update local copy to match what was saved
+                        st.session_state.edited_resume = response.json().get("data", {})
+                        st.session_state.resume_data = copy.deepcopy(st.session_state.edited_resume)
+                        logging.info("Resume changes saved successfully")
+                        return True
                 except Exception as e:
                     st.error(f"Error saving changes: {str(e)}")
                     return False
@@ -323,15 +337,25 @@ def display_theme_selector(themes):
                 return
 
 def display_resume_json(resume_data):
-    """Display the resume data in a readable format"""
-    if "preview_key" not in st.session_state:
+    import hashlib
+    import json
+    
+    if resume_data:
+        current_hash = hashlib.md5(json.dumps(resume_data, sort_keys=True).encode()).hexdigest()
+    else:
+        current_hash = "none"
+    
+    # Initialize preview state
+    if "preview_hash" not in st.session_state:
+        st.session_state.preview_hash = None
         st.session_state.preview_key = 0
     
-    # Only increment the key when the resume data changes
-    if "last_displayed_resume" not in st.session_state or st.session_state.last_displayed_resume != resume_data:
+    # Only increment key when resume data changes
+    if st.session_state.preview_hash != current_hash:
         st.session_state.preview_key += 1
-        st.session_state.last_displayed_resume = copy.deepcopy(resume_data)
+        st.session_state.preview_hash = current_hash
     
+    # Use the key to force container recreation only when data changes
     with st.container(key=f"preview_container_{st.session_state.preview_key}"):
         # About section
         if "about" in resume_data:
@@ -431,7 +455,7 @@ def display_resume_json(resume_data):
             st.markdown("---")
 
 def create_llm_based_editor(resume_data):
-    """Create an LLM-based chat editor for resume data with improved UI handling"""
+    """Create an LLM-based chat editor for resume data with improved UI stability"""
     
     # Initialize chat history
     if "messages" not in st.session_state:
@@ -453,66 +477,74 @@ def create_llm_based_editor(resume_data):
         with st.chat_message("user"):
             st.write(prompt)
         
-        # Only show spinner without triggering a rerun
-        with st.spinner("Updating your resume..."):
-            try:
-                # Call the API endpoint
-                response = requests.post(
-                    f"{API_URL}/json-to-sf", 
-                    json={"changes": prompt, "mode": "revise", "user_email": st.session_state.user_email}
-                )
+        # Set a processing flag to prevent multiple UI updates
+        # if "llm_processing" not in st.session_state:
+        #     st.session_state.llm_processing = True
+            
+            # Show a spinner message without blocking
+            with st.status("Updating your resume...", expanded=True) as status:
+                try:
+                    # Call the API endpoint
+                    response = requests.post(
+                        f"{API_URL}/json-to-sf", 
+                        json={"changes": prompt, "mode": "revise", "user_email": st.session_state.user_email}
+                    )
+                    
+                    # Process response
+                    if response.status_code == 200:
+                        # Extract the JSON and update session state
+                        updated_resume = response.json().get("data", {})
+                        st.session_state.edited_resume = updated_resume
+                        st.session_state.resume_updated = True
+                        
+                        # Force refresh the preview by changing last_displayed_resume
+                        if "last_displayed_resume" in st.session_state:
+                            del st.session_state.last_displayed_resume
+                        
+                        # Prepare assistant response
+                        assistant_response = "✅ I've updated your resume! Here's what changed:\n\n"
+                        
+                        # Identify the changes (simplified version)
+                        if "about" in prompt.lower():
+                            assistant_response += "- Updated your personal information\n"
+                        if "education" in prompt.lower() or "university" in prompt.lower() or "degree" in prompt.lower():
+                            assistant_response += "- Updated your education details\n"
+                        if "skill" in prompt.lower():
+                            assistant_response += "- Updated your skills\n"
+                        if "experience" in prompt.lower() or "job" in prompt.lower() or "work" in prompt.lower():
+                            assistant_response += "- Updated your work experience\n"
+                        if "project" in prompt.lower():
+                            assistant_response += "- Updated your projects\n"
+                        if "accomplishment" in prompt.lower() or "award" in prompt.lower() or "certification" in prompt.lower():
+                            assistant_response += "- Updated your accomplishments\n"
+                        
+                        assistant_response += "\nYou can see the changes in the resume preview. Is there anything else you'd like to update?"
+                        status.update(label="Resume updated successfully!", state="complete")
+                        # st.rerun()
+                    else:
+                        # Handle error
+                        status.update(label=f"Error updating resume: {response.text}", state="error")
+                        assistant_response = "I had trouble updating your resume. Please try again."
+                        st.session_state.edited_resume = resume_data
+                        st.session_state.resume_updated = False
+                        # st.rerun()
                 
-                # Process response without immediate rerun
-                if response.status_code == 200:
-                    # Extract the JSON and update session state
-                    updated_resume = response.json()
-                    st.session_state.edited_resume = updated_resume
-                    st.session_state.resume_updated = True
-                    
-                    # Force refresh the preview by changing last_displayed_resume
-                    if "last_displayed_resume" in st.session_state:
-                        del st.session_state.last_displayed_resume
-                    
-                    # Prepare assistant response
-                    assistant_response = "✅ I've updated your resume! Here's what changed:\n\n"
-                    
-                    # Identify the changes (simplified version)
-                    if "about" in prompt.lower():
-                        assistant_response += "- Updated your personal information\n"
-                    if "education" in prompt.lower() or "university" in prompt.lower() or "degree" in prompt.lower():
-                        assistant_response += "- Updated your education details\n"
-                    if "skill" in prompt.lower():
-                        assistant_response += "- Updated your skills\n"
-                    if "experience" in prompt.lower() or "job" in prompt.lower() or "work" in prompt.lower():
-                        assistant_response += "- Updated your work experience\n"
-                    if "project" in prompt.lower():
-                        assistant_response += "- Updated your projects\n"
-                    if "accomplishment" in prompt.lower() or "award" in prompt.lower() or "certification" in prompt.lower():
-                        assistant_response += "- Updated your accomplishments\n"
-                    
-                    assistant_response += "\nYou can see the changes in the resume preview. Is there anything else you'd like to update?"
-                else:
-                    # Handle error without rerun
-                    st.error(f"Error updating resume: {response.text}")
-                    assistant_response = "I had trouble updating your resume. Please try again."
+                except Exception as e:
+                    status.update(label=f"Error: {str(e)}", state="error")
+                    assistant_response = "I encountered an error while trying to update your resume. Please try again."
                     st.session_state.edited_resume = resume_data
                     st.session_state.resume_updated = False
-            
-            except Exception as e:
-                st.error(f"Error: {str(e)}")
-                assistant_response = "I encountered an error while trying to update your resume. Please try again."
-                st.session_state.edited_resume = resume_data
-                st.session_state.resume_updated = False
-        
-        # Add assistant response to chat history
-        st.session_state.messages.append({"role": "assistant", "content": assistant_response})
-        
-        # Display assistant response without immediate rerun
-        with st.chat_message("assistant"):
-            st.write(assistant_response)
-        
-        # Now we can rerun to refresh the UI properly
-        st.rerun()
+                
+            # Add assistant response to chat history
+            st.session_state.messages.append({"role": "assistant", "content": assistant_response})
+            # Display assistant response in a separate chat message
+            st.rerun()
+            with st.chat_message("assistant"):
+                st.write(assistant_response)
+
+            # Clear the processing flag to allow new inputs
+            st.session_state.llm_processing = False
+
     
     return st.session_state.edited_resume
 
@@ -790,30 +822,23 @@ def deploy_new_user_portfolio(repo_name_input):
                 st.session_state.deploy_clicked = True
                 st.session_state.repo_name = repo_name_input
                 
-                # Reset deployment states
-                st.session_state.deployment_complete = False
-                st.session_state.deployment_completed = False
-                st.session_state.deployment_error = False
-                
                 # Make sure edited_resume exists before deployment
                 if "edited_resume" not in st.session_state and "resume_data" in st.session_state:
                     st.session_state.edited_resume = copy.deepcopy(st.session_state.resume_data)
                 
-                # Start asynchronous deployment
-                deploy_portfolio(
-                    st.session_state.user_email,
-                    st.session_state.selected_theme,
-                    repo_name_input.strip(),
-                    handle_deployment_completion
-                )
-                
-                # Show initial message
                 st.info("Deployment started! This will take approximately 40 seconds...")
-                st.session_state.show_deploy_progress = True
-                st.rerun()
+                response = APIClient.request("deploy", method="post", data={
+                    "repo_name": st.session_state.repo_name,
+                    "theme": st.session_state.selected_theme,
+                    "user_email": st.session_state.user_email
+                })
+                if "url" in response:
+                    st.success(f"Your site has been deployed - {response.get('url')}")
+                else:
+                    st.error("Contact Admin, something went wrong")
     else:
         # Handle deployment UI states
-        handle_deployment_ui(is_new_user=True)
+        st.info('Your site has already been deployed, please visit the main page')
 
 def render_portfolio_editor():
     # """Render the portfolio editor page"""
@@ -917,13 +942,13 @@ def render_portfolio_editor():
                             )
                             
                             if resume_response.status_code == 200:
-                                resume_data = resume_response.json()
+                                resume_data = resume_response.json().get("data", {})
                                 st.session_state.resume_data = resume_data
                                 st.session_state.edited_resume = copy.deepcopy(resume_data)
                                 st.session_state.last_processed_file = file_hash
                                 st.success("Resume loaded successfully! You can now edit your information.")
                             else:
-                                st.error(f"Error processing resume: {resume_response.text}")
+                                st.error(f"Upload a valid Resume")
                     except Exception as e:
                         st.error(f"An error occurred: {str(e)}")
                 
@@ -994,10 +1019,11 @@ def render_portfolio_editor():
                     if st.session_state[validation_key]:
                         st.success("Repository name available!")
                     else:
-                        st.error(f"A repository named '{repo_name_input}' already exists. Please choose another name.")
+                        st.error(f"A repository named '{repo_name_input}' already exists or this is an invalid identifier. Please choose another name.")
 
                 # Display deployment options
-                st.subheader("Deployment Options")
+                if "deploy_clicked" not in st.session_state:
+                    st.subheader("Deployment Options")
                 
                 # Handle deployment UI with unified function
                 deploy_new_user_portfolio(repo_name_input)
@@ -1031,7 +1057,8 @@ def render_sidebar():
     # Define available pages
     pages = {
         "Portfolio Editor": "editor",
-        "Job Listings": "jobs"  # This is the key for your jobs page
+        "Job Listings": "jobs",
+        "Q&A": "qa"
     }
     
     # Create radio buttons for navigation with a unique key
@@ -1061,6 +1088,8 @@ def render_sidebar():
         st.rerun()
     
     return st.session_state.current_page
+
+    
 def run_jobs_page():
     """Run the jobs page functionality without calling set_page_config"""
     try:
@@ -1089,6 +1118,18 @@ def run_jobs_page():
             st.session_state.filters_applied = False
             st.session_state.filter_pending = False
             st.session_state.interview_prep_job = None
+
+        def request_interview_prep(skills, job_url, user_email=""):
+            """Request interview preparation materials"""
+            
+            interview_prep_data = {
+                "skills": skills,
+                "job_url": job_url,
+                "user_email": user_email
+            }
+            
+            response = requests.post(f"{API_URL}/trigger_dag", json=interview_prep_data)
+            return response.json()
         
         # Define helper functions
         def format_datetime(dt):
@@ -1217,8 +1258,7 @@ def run_jobs_page():
         if st.session_state.first_load or st.session_state.jobs_data is None:
             with st.spinner("Loading job listings..."):
                 # Call API directly
-                API_URL = "http://localhost:8000"
-                response = requests.get(f'{API_URL}/all-jobs-api/')
+                response = requests.get(f'{API_URL}/all-jobs-api')
                 
                 if response.status_code == 200:
                     response_json = response.json()
@@ -1239,7 +1279,7 @@ def run_jobs_page():
                     st.session_state.jobs_data = all_jobs_df
                     st.session_state.first_load = False
                 else:
-                    st.error(f"API Error: {response.status_code} for url: {API_URL}/all-jobs-api/")
+                    st.error(f"API Error: {response.status_code} for url: {API_URL}/all-jobs-api")
                     st.session_state.jobs_data = pd.DataFrame()
         
         # Display job listings
@@ -1290,25 +1330,26 @@ def run_jobs_page():
             else:
                 st.write(f"Found **{len(jobs_df)}** job listings")
                 
+                #here
                 for idx, job in jobs_df.iterrows():
+                    # Get job details with fallbacks for missing data
                     job_title = job.get('TITLE') if pd.notna(job.get('TITLE')) else job.get('JOB_ROLE', 'Unknown Position')
                     job_company = job.get('COMPANY') if pd.notna(job.get('COMPANY')) else 'Unknown Company'
-                    job_role = job.get('JOB_ROLE', '') if 'JOB_ROLE' in job else ''
+                    job_location = job.get('LOCATION') if pd.notna(job.get('LOCATION')) else 'United States'
+                    job_role = job.get('JOB_ROLE', '')
                     job_url = job.get('URL', '#')
                     job_seniority = job.get('SENIORITY_LEVEL') if pd.notna(job.get('SENIORITY_LEVEL')) else 'Not Specified'
                     job_employment = job.get('EMPLOYMENT_TYPE') if pd.notna(job.get('EMPLOYMENT_TYPE')) else 'Not Specified'
                     posted_date = format_datetime(job.get('POSTED_DATE')) if pd.notna(job.get('POSTED_DATE')) else 'Unknown'
                     
-                    skills_str = job.get('SKILLS', '')
+                    # Parse skills
+                    skills_str = job.get('SKILLS')
                     skills = parse_skills(skills_str)
-                    skills_html = ""
-                    if skills:
-                        skills_html = "".join([f"<span class='skill-tag'>{skill}</span>" for skill in skills])
-                    else:
-                        skills_html = "<em>No skills listed</em>"
                     
+                    # Create a unique key for this job
                     job_key = f"job-{idx}"
-
+                    
+                    # Create job card
                     with st.container():
                         job_card = f"""
                         <div class="job-card">
@@ -1318,14 +1359,15 @@ def run_jobs_page():
                                 <span class="job-role-tag">{job_role}</span>
                                 <span style="margin-left: 10px;">{job_seniority}</span>
                                 <span style="margin-left: 10px;">{job_employment}</span>
+                                <span style="margin-left: 10px;">{job_location}</span>
                             </div>
                             <div class="job-date">Posted: {posted_date}</div>
                             <div class="job-buttons">
                                 <a href="{job_url}" target="_blank" class="view-button">View Job Listing</a>
-                                <a href="#" onclick="event.preventDefault(); document.getElementById('prep-{job_key}').click();" class="prep-button">Prepare for Interview</a>
+                                </a>
                             </div>
                         """
-
+                        
                         # Add skills if any
                         if skills:
                             job_card += "<div class='skills-title'>🔧 Skills</div>"
@@ -1337,8 +1379,28 @@ def run_jobs_page():
                         job_card += "</div>"
 
                         st.markdown(job_card, unsafe_allow_html=True)
-                        st.markdown("<hr style='margin: 30px 0; border: none; border-top: 1px solid #eee;'>", unsafe_allow_html=True)
                         
+                        # Hidden button for interview prep
+                        if st.button("Prepare for Interview", key=f"prep-{job_key}", help="Prepare for this job interview", type="secondary"):
+                            with st.spinner("Setting up interview preparation..."):
+                                # Convert skills to a list if it's not already
+                                skill_list = skills if isinstance(skills, list) else parse_skills(skills_str)
+                                
+                                # Submit interview prep request with user email
+                                response = request_interview_prep(skill_list, job_url, st.session_state.user_email)
+                                
+                                if response and response.get("status_code") == 200:
+                                    st.success("Interview preparation set up successfully!")
+                                    st.info("Go to the QA tab to view your interview questions.")
+                                    
+                                    # Simple button to go to QA tab
+                                    if st.button("Go to QA Tab", key=f"goto_qa_{job_key}"):
+                                        st.session_state.page = "qa"
+                                        st.experimental_rerun()
+                                else:
+                                    st.error("Failed to set up interview preparation. Please try again.")
+                        
+                        st.markdown("<hr style='margin: 30px 0; border: none; border-top: 1px solid #eee;'>", unsafe_allow_html=True)       
     except Exception as e:
         st.error(f"Error running jobs page: {str(e)}")
         import traceback
@@ -1355,6 +1417,8 @@ def main_app():
         render_portfolio_editor()  # Your existing portfolio editor function
     elif current_page == "jobs":
         run_jobs_page()  # Run the jobs page functionality
+    elif current_page == "qa":
+        qa_page()
 
 
 # Main app logic

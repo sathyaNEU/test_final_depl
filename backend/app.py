@@ -95,7 +95,7 @@ JOBS_CACHE = {
     }
 
  
-@app.post("/upload-to-gcp/")
+@app.post("/upload-to-gcp")
 async def text_to_json_converter(user_email: str, file: UploadFile = File(...) ):
     if not file.filename.endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Invalid file type. Please upload a PDF file.")
@@ -114,7 +114,7 @@ async def text_to_json_converter(user_email: str, file: UploadFile = File(...) )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
-@app.post("/json-to-sf/")
+@app.post("/json-to-sf")
 async def json_to_snowflake(requests : jsonModel):
     try:
         user_email = requests.user_email
@@ -122,28 +122,29 @@ async def json_to_snowflake(requests : jsonModel):
         changes = getattr(requests, 'changes', None)
         json_data = get_structured_data(user_email, changes, mode)
         update_this_column(user_email, 'resume_json', json.dumps(json_data))
-        return  json_data
+        return  { 'data': json_data  }
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
 
-@app.post("/login/")
+@app.post("/login")
 async def login_user_if_exist(requests: loginModel):
     try:
         user_email = requests.user_email
         user_password = requests.password
         response = get_this_column(user_email,["PASSWORD", "RESUME_JSON", "UI_ENDPOINT", "THEME","NAME"])
-
-        if user_password == response["PASSWORD"]: 
-            return {"status_code" : 200, "message":"Login successfull", "user_data": response}  
-        else: 
-            return {"status_code":401, "message":"Invalid username or password"}
-            
+        if response:
+            if user_password == response["PASSWORD"]: 
+                return {"status_code" : 200, "message":"Login successfull", "user_data": response}  
+            else: 
+                return {"status_code":401, "message":"Invalid username or password"}
+        else:
+                return {"status_code":401, "message":"Invalid username or password"}        
     except Exception as e:
-        return str(e)
+        return {"status_code":500, "message":"Internal Server Error"}
 
-@app.post("/register/")
+@app.post("/register")
 async def user_signup(requests : signupModel):
     try:
         fullname=requests.fullname
@@ -229,7 +230,7 @@ async def deploy_portfolio(deploy_data: compileModel):
 
 # ======================================== JOBS ===================================================================
 
-@app.get("/all-jobs-api/")
+@app.get("/all-jobs-api")
 def get_all_jobs_from_sf():
 
     conn = sf_client()
@@ -237,14 +238,14 @@ def get_all_jobs_from_sf():
         cursor = conn.cursor()
 
         query = """
-        SELECT POSTED_DATE, JOB_ROLE, TITLE, COMPANY, SENIORITY_LEVEL, EMPLOYMENT_TYPE, SKILLS, URL
+        SELECT POSTED_DATE, JOB_ROLE, TITLE, COMPANY, SENIORITY_LEVEL, EMPLOYMENT_TYPE, SKILLS, URL, LOCATION
         FROM JOB_HISTORY
         WHERE POSTED_DATE >= DATEADD(hour, -5, CURRENT_TIMESTAMP())
         ORDER BY POSTED_DATE DESC
         """
         cursor.execute(query)
         results = cursor.fetchall()
-        column_names = ["POSTED_DATE", "JOB_ROLE", "TITLE", "COMPANY", "SENIORITY_LEVEL", "EMPLOYMENT_TYPE", "SKILLS", "URL"]
+        column_names = ["POSTED_DATE", "JOB_ROLE", "TITLE", "COMPANY", "SENIORITY_LEVEL", "EMPLOYMENT_TYPE", "SKILLS", "URL", "LOCATION"]
         df = pd.DataFrame(results, columns=column_names)
         data_dict = df.to_dict(orient="records") 
         return {"status_code": 200, "data":data_dict}
@@ -358,7 +359,7 @@ async def jobs_api(request: JobsRequest):
 
 
 
-@app.post("/trigger_dag/")
+@app.post("/trigger_dag")
 def interview_prep_pipeline(request: interviewPrep):
     user_email = request.user_email
     job_url = request.job_url
@@ -393,7 +394,7 @@ def interview_prep_pipeline(request: interviewPrep):
     
 
 
-@app.get("/pipeline_status/")
+@app.get("/pipeline_status")
 def get_pipeline_status(user_email):
     if not user_email:
         raise HTTPException(
@@ -416,7 +417,7 @@ def get_pipeline_status(user_email):
         )         
     
 
-@app.get("/qa/")
+@app.get("/qa")
 def get_qa_data(dag_run_id):
     if not dag_run_id:
         raise HTTPException(
@@ -439,7 +440,7 @@ def get_qa_data(dag_run_id):
         )         
     
        
-@app.post("/qa-validation/")
+@app.post("/qa-validation")
 def validate_and_generate_report(request: qaValidateWrapper):
     answers = request.answers
     user_email = request.user_email
@@ -447,8 +448,9 @@ def validate_and_generate_report(request: qaValidateWrapper):
 
     try:
         state_before_llm = map_user_answers(answers)
+        logging.info(state_before_llm)
         state_after_llm = judge_qa(state_before_llm)
-
+        logging.info(state_before_llm)
         rrd = report_ready_data(state_before_llm, state_after_llm)
         markdown_str = generate_quiz_report_md(user_email, 'Job Prep Quiz', rrd)
 
