@@ -19,8 +19,6 @@ from google.oauth2 import service_account
 load_dotenv()
 
 
-
-
 def judge_qa(combined_qa):
     client = genai.Client(
       vertexai=True,

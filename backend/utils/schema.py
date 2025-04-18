@@ -5,7 +5,6 @@ from pydantic import BaseModel, ValidationError
 from typing import List
  
 
-
 class QAReviewItem(BaseModel):
     id: int
     review: str

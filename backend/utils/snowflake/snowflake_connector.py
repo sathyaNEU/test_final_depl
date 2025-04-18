@@ -1,4 +1,5 @@
 import snowflake.connector as sf
+from typing import List, Dict, Any
 from dotenv import load_dotenv
 import os
 import json
@@ -28,16 +29,19 @@ def get_this_column(user_email, columns):
     conn = sf_client()
     cursor = conn.cursor()
     select_query = f"SELECT {columns_str} FROM user_artifacts WHERE user_email = %s"
-    cursor.execute(select_query, (user_email,))
-    result = cursor.fetchone()
-    cursor.close()
-    if result is None:
-        return None
+    try:
+        cursor.execute(select_query, (user_email,))
+        result = cursor.fetchone()
+        cursor.close()
+        if result is None:
+            return None
 
-    if isinstance(columns, str):
-        return result[0]
-    else:
-        return dict(zip(columns, result))
+        if isinstance(columns, str):
+            return result[0]
+        else:
+            return dict(zip(columns, result))
+    except Exception as e :
+        return str(e)
 
 
 
@@ -122,34 +126,33 @@ def get_qa(dag_run_id):
     return [{"ID": item["ID"], "QUESTION": item["QUESTION"] } for item in data]
 
 
-
-def map_user_answers(answers):
+def map_user_answers(answers: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    if not answers:
+        return []
+ 
     ids = [pair["id"] for pair in answers]
-    conn = sf_client()
-    cursor = conn.cursor()
  
-    # Correctly format the SQL IN clause
-    placeholders = ','.join(['%s'] * len(ids))
-    query = f"SELECT ID, QUESTION, ANSWER FROM skill_qa WHERE ID IN ({placeholders})"
-   
-    cursor.execute(query, ids)
-    df = cursor.fetch_pandas_all()
+    query = f"""
+        SELECT ID, QUESTION, ANSWER
+        FROM skill_qa
+        WHERE ID IN ({','.join(['%s'] * len(ids))})
+    """
  
-    actual_qa = df.to_dict(orient='records')
+    with sf_client() as conn:
+        df = conn.cursor().execute(query, ids).fetch_pandas_all()
+ 
     lookup = {
-        pair["ID"]: {
-            "actual_answer": pair["ANSWER"],
-            "question": pair["QUESTION"]
-        } for pair in actual_qa
+        row["ID"]: {"question": row["QUESTION"], "actual_answer": row["ANSWER"]}
+        for _, row in df.iterrows()
     }
  
-    combined_qa = [
+    return [
         {
             "id": pair["id"],
             "user_answer": pair["user_answer"],
-            "actual_answer": lookup.get(pair["id"], {}).get("actual_answer"),
-            "question": lookup.get(pair["id"], {}).get("question")
+            **lookup.get(pair["id"], {"question": None, "actual_answer": None})
         }
         for pair in answers
     ]
-    return combined_qa
+
+

@@ -128,7 +128,7 @@ def get_structured_data(user_email, changes, mode='generate'):
                 cleaned_content = json.loads(response_text.strip())
                 return cleaned_content
             else:
-                return "Upload a valid resume"
+                return {"Upload a valid resume"}
             
     except Exception as e:
             return {"error structuring": str(e)}
