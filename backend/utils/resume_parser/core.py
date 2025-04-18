@@ -101,7 +101,6 @@ def get_structured_data(user_email, changes, mode='generate'):
 
             # Extract text 
             if valid_resume:
-                logging.info("valid r")
                 if mode=='generate':
                     data = extracted_text
                 else:
