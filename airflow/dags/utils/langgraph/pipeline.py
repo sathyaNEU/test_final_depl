@@ -28,6 +28,7 @@ class State(TypedDict):
 
 def scraper(state:State):
     print(f"================= SCRAPE {state['current_link']}=================")
+    print(state)
     link = state['current_link']
     if link:
         return {'context':scrape_this_site(state['current_link'])}
@@ -69,7 +70,7 @@ def validate_context(state: State):
 # Router node to check if context is valid or not
 def context_check_router(state: State):
     print("================= ROUTING CHECK =================")
-    if state["retry_count"] >= 1:
+    if state["retry_count"] > 1:
         # Stop the process if retry count is 1 (end without QA generation)
         return "End"
     return "Valid" if state["is_valid"] else "Invalid"
@@ -83,7 +84,7 @@ def fetch_alternative_link(state: State):
     exclude_domains.append(state.get("current_link", ""))  # Add the current link to exclude list
     
     # Call the web API to get a new link
-    new_links = web_api(skill, exclude_domains=exclude_domains).get(skill, [])
+    new_links = web_api(skill, exclude_domains=exclude_domains)
     new_link = new_links[0] if new_links else None  # Get the first URL from the response
     
     if not new_link:
@@ -100,9 +101,11 @@ def fetch_alternative_link(state: State):
 def generate_qa(state: State):
     print("================= QA GENERATION =================")
     try:
-        return {"qa_pairs": qa_llm(state['context'])} 
+        qa_response = qa_llm(state['skill'], state['context'])
+        print(qa_response)
+        return {"qa_pairs": qa_response} 
     except Exception as e:
-        print("Error reading QA file:", e)
+        print("Something went wrong:", str(e))
         return {"qa_pairs": []}
 
 def validate_qa(state: State):
@@ -116,6 +119,7 @@ def validate_qa(state: State):
     docs = _doc_splitter.run({"md_file_converter": {"sources": [md_stream]}})['splitter']['documents']
     skill = state['skill']
     link = state['current_link']
+    print(qa)
     if isinstance(qa, int):
         {"insert_data": []}
     #batch insert

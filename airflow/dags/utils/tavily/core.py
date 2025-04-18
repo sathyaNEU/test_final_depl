@@ -10,4 +10,4 @@ def web_api(skill, num_results=1, exclude_domains=[]):
     )
     if not response['results']:
         return {skill:[]}
-    return {skill: [res['url'] for res in response['results']]}
+    return [res['url'] for res in response['results']]

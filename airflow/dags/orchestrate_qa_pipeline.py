@@ -28,8 +28,10 @@ with DAG(
     @task
     def sf_job_update_queued(state):
         dag_run_id = str(uuid4())
+        state['skills'] = [skill.lower() for skill in state['skills']]
         state["dag_run_id"] = dag_run_id
-        upsert_qa_pipeline_status(state['user_email'], 'qa_pipeline', dag_run_id, 'queued')
+        job_url = state['job_url'] if 'job_url' in state else None
+        upsert_qa_pipeline_status(state['user_email'], state['skills'], 'qa_pipeline', dag_run_id, 'queued', job_url)
         return state
 
     @task
@@ -62,15 +64,13 @@ with DAG(
         
         status = get_dag_run_status('qa_pipeline', state['dag_run_id'])
         
-        final_status = 'completed'
         if status == State.SUCCESS:
-            final_status = 'completed'
+            final_status = 'success'
         elif status == State.FAILED:
             final_status = 'failed'
         else:
             final_status = 'unknown'
-        
-        upsert_qa_pipeline_status(state['user_email'], 'qa_pipeline', state['dag_run_id'], final_status)
+        upsert_qa_pipeline_status(state['user_email'], state['skills'], 'qa_pipeline', state['dag_run_id'], final_status)
         return state
 
     # Chain tasks
