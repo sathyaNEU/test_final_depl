@@ -22,7 +22,7 @@ logging.basicConfig(
 # Load environment variables
 load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-API_URL = os.getenv("API_URL", "http://localhost:8000") 
+API_URL = os.getenv("API_URL", "https://botfolio-apis-548112246073.us-central1.run.app") 
 
 # Configure Gemini API
 genai.configure(api_key=GEMINI_API_KEY)
