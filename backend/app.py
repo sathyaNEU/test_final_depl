@@ -8,6 +8,7 @@ from google.cloud import storage
 from uuid import uuid4
 from pydantic import BaseModel
 from utils.snowflake.snowflake_connector import get_this_column, update_this_column, request_to_signup
+from utils.theme_compilation.core import render_html
 from typing import Optional
 import json 
 import logging
@@ -40,6 +41,9 @@ class signupModel(BaseModel):
     user_email: str
     profession: str
 
+class CompileRequest(BaseModel):
+    user_email: str
+    theme: str
  
 @app.post("/resume-to-gcp/")
 async def text_to_json_converter(user_email: str, file: UploadFile = File(...) ):
@@ -105,3 +109,15 @@ async def user_signup(requests : signupModel):
 
     except Exception as e:
         return str(e)
+
+
+@app.post("/compile")
+async def compile_html(request: CompileRequest):
+    user_email = request.user_email
+    theme = request.theme
+    with open('utils/theme_compilation/resume_mock.json', 'r') as f:
+        resume_dict = json.loads(f.read())
+    content = render_html(resume_dict, theme)
+    return {'status_code':200, 'content':content}
+        
+        

@@ -34,7 +34,7 @@ Your task is to parse the content and return a clean JSON object with a list of 
 """
 
 user_qa_datagen_prompt = """
-Here is the markdown content from a website that contains interview questions and answers for a specific skill.
+Here is the markdown content from a website that contains interview questions and answers for {}.
 
 Markdown content:
 ---

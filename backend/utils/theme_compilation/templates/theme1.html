@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ resume.about.name|default('IT Professional') }} - Portfolio</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* CSS Reset and Base Styles with Modern Variables */
+        :root {
+            --primary-color: #0a192f;       /* Dark blue - primary brand color */
+            --secondary-color: #64ffda;     /* Teal accent - for highlights */
+            --text-primary: #ccd6f6;        /* Light blue-gray - main text color */
+            --text-secondary: #8892b0;      /* Medium blue-gray - secondary text */
+            --bg-primary: #0a192f;          /* Dark blue - main background */
+            --bg-secondary: #112240;        /* Slightly lighter blue - card backgrounds */
+            --bg-light: #f8f9fa;            /* Off-white - light sections */
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+            --transition: all 0.3s ease;
+            --border-radius: 8px;
+            --container-width: 1140px;
+            --section-spacing: 5rem;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            font-size: 62.5%; /* 1rem = 10px */
+        }
+
+        body {
+            font-family: 'Inter', 'Roboto', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            font-size: 1.6rem;
+            overflow-x: hidden;
+        }
+
+        /* Typography */
+        h1, h2, h3, h4, h5, h6 {
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+        }
+
+        h1 {
+            font-size: 4.2rem;
+            letter-spacing: -0.5px;
+        }
+
+        h2 {
+            font-size: 3.2rem;
+            letter-spacing: -0.3px;
+            position: relative;
+            display: inline-block;
+            margin-bottom: 3rem;
+        }
+
+        h2::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 0;
+            width: 60px;
+            height: 3px;
+            background-color: var(--secondary-color);
+        }
+
+        p, li {
+            font-size: 1.6rem;
+            margin-bottom: 1.5rem;
+            color: var(--text-secondary);
+        }
+
+        a {
+            color: var(--secondary-color);
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        a:hover {
+            color: #9df3e4;
+        }
+
+        /* Layout */
+        .container {
+            width: 100%;
+            max-width: var(--container-width);
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        section {
+            padding: var(--section-spacing) 0;
+        }
+
+        /* Header / Hero Section */
+        header {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 0;
+            position: relative;
+            background-color: var(--bg-primary);
+        }
+
+        .header-content {
+            max-width: 90rem;
+        }
+
+        .header-subtitle {
+            font-size: 1.8rem;
+            color: var(--secondary-color);
+            margin-bottom: 2rem;
+            font-family: 'Fira Code', monospace;
+        }
+
+        .header-title {
+            font-size: 6rem;
+            margin-bottom: 2rem;
+            line-height: 1.1;
+        }
+
+        .header-description {
+            font-size: 2rem;
+            max-width: 60rem;
+            margin-bottom: 3rem;
+        }
+
+        .header-cta {
+            display: inline-block;
+            padding: 1.2rem 2.8rem;
+            background-color: transparent;
+            color: var(--secondary-color);
+            border: 1px solid var(--secondary-color);
+            border-radius: 4px;
+            font-size: 1.6rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .header-cta:hover {
+            background-color: rgba(100, 255, 218, 0.1);
+            transform: translateY(-3px);
+        }
+
+        /* Navigation */
+        .nav-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 2rem 0;
+            background-color: rgba(10, 25, 47, 0.85);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            transition: var(--transition);
+        }
+
+        .nav-container.scrolled {
+            padding: 1.5rem 0;
+            box-shadow: 0 10px 30px -10px rgba(2, 12, 27, 0.7);
+        }
+
+        .nav-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-logo {
+            font-size: 2.4rem;
+            font-weight: 700;
+            color: var(--secondary-color);
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 3rem;
+        }
+
+        .nav-link {
+            font-size: 1.4rem;
+            color: var(--text-primary);
+            transition: var(--transition);
+        }
+
+        .nav-link:hover {
+            color: var(--secondary-color);
+        }
+
+        .nav-number {
+            color: var(--secondary-color);
+            margin-right: 0.5rem;
+            font-family: 'Fira Code', monospace;
+        }
+
+        /* Section Styling */
+        .section-title-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-number {
+            color: var(--secondary-color);
+            font-family: 'Fira Code', monospace;
+            font-size: 2rem;
+            margin-right: 1rem;
+        }
+
+        .section-title {
+            margin-bottom: 0;
+        }
+
+        .section-title::after {
+            width: 100%;
+        }
+
+        .section-line {
+            flex: 1;
+            height: 1px;
+            background-color: rgba(204, 214, 246, 0.2);
+            margin-left: 2rem;
+        }
+
+        /* Education Section */
+        .education-item {
+            position: relative;
+            padding: 2rem;
+            border-radius: var(--border-radius);
+            background-color: var(--bg-secondary);
+            margin-bottom: 2rem;
+            transition: var(--transition);
+            box-shadow: var(--shadow);
+        }
+
+        .education-item:hover {
+            transform: translateY(-5px);
+        }
+
+        .education-degree {
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .education-school {
+            font-size: 1.6rem;
+            color: var(--text-secondary);
+        }
+
+        .education-date {
+            font-size: 1.4rem;
+            color: var(--secondary-color);
+            font-family: 'Fira Code', monospace;
+        }
+
+        .education-courses {
+            margin-top: 1.5rem;
+        }
+
+        .education-courses-title {
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+        }
+
+        .education-courses-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+        }
+
+        .education-course {
+            background-color: rgba(100, 255, 218, 0.1);
+            color: var(--secondary-color);
+            border-radius: 4px;
+            padding: 0.4rem 0.8rem;
+            font-size: 1.3rem;
+        }
+
+        .education-gpa {
+            margin-top: 1rem;
+            font-family: 'Fira Code', monospace;
+            color: var(--secondary-color);
+        }
+
+        /* Accomplishments Section */
+        .accomplishments-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .accomplishment-item {
+            background-color: var(--bg-secondary);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            position: relative;
+            transition: var(--transition);
+            box-shadow: var(--shadow);
+            border-left: 2px solid var(--secondary-color);
+        }
+
+        .accomplishment-item:hover {
+            transform: translateY(-5px);
+        }
+
+        .accomplishment-item::before {
+            content: '▹';
+            position: absolute;
+            left: -12px;
+            color: var(--secondary-color);
+            font-size: 2.5rem;
+            line-height: 1;
+        }
+
+        .accomplishment-title {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .accomplishment-date {
+            font-family: 'Fira Code', monospace;
+            color: var(--secondary-color);
+            font-size: 1.4rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Skills Section */
+        .skills-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .skill-category {
+            background-color: var(--bg-secondary);
+            border-radius: var(--border-radius);
+            padding: 2.5rem;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+
+        .skill-category:hover {
+            transform: translateY(-5px);
+        }
+
+        .skill-title {
+            color: var(--text-primary);
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(204, 214, 246, 0.2);
+            padding-bottom: 1rem;
+        }
+
+        .skill-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .skill-tag {
+            background-color: rgba(100, 255, 218, 0.1);
+            color: var(--secondary-color);
+            border-radius: 20px;
+            padding: 0.6rem 1.2rem;
+            font-size: 1.4rem;
+            transition: var(--transition);
+        }
+
+        .skill-tag:hover {
+            background-color: rgba(100, 255, 218, 0.2);
+        }
+
+        /* Work Experience Section */
+        .job {
+            background-color: var(--bg-secondary);
+            padding: 3rem;
+            border-radius: var(--border-radius);
+            margin-bottom: 3rem;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .job:hover {
+            transform: translateY(-5px);
+        }
+
+        .job-title {
+            font-size: 2.2rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .job-company {
+            color: var(--secondary-color);
+            font-size: 1.8rem;
+        }
+
+        .job-duration {
+            font-family: 'Fira Code', monospace;
+            color: var(--text-secondary);
+            font-size: 1.4rem;
+            margin-bottom: 2rem;
+        }
+
+        .job-location {
+            color: var(--text-secondary);
+            font-style: italic;
+            margin-left: 1rem;
+        }
+
+        .job ul {
+            padding-left: 2rem;
+            margin-top: 1.5rem;
+        }
+
+        .job ul li {
+            position: relative;
+            padding-left: 2.5rem;
+            margin-bottom: 1rem;
+            list-style: none;
+        }
+
+        .job ul li::before {
+            content: '▹';
+            position: absolute;
+            left: 0;
+            color: var(--secondary-color);
+            font-size: 1.8rem;
+        }
+
+        /* Projects Section */
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 2.5rem;
+        }
+
+        .project-card {
+            background-color: var(--bg-secondary);
+            border-radius: var(--border-radius);
+            padding: 2.5rem;
+            transition: var(--transition);
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .project-card:hover {
+            transform: translateY(-7px);
+        }
+
+        .project-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .project-folder {
+            color: var(--secondary-color);
+            font-size: 3rem;
+        }
+
+        .project-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .project-link {
+            color: var(--text-primary);
+            font-size: 2rem;
+            transition: var(--transition);
+        }
+
+        .project-link:hover {
+            color: var(--secondary-color);
+        }
+
+        .project-title {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .project-description {
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            flex-grow: 1;
+        }
+
+        .project-tech {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: auto;
+        }
+
+        .project-tech-item {
+            font-family: 'Fira Code', monospace;
+            font-size: 1.3rem;
+            color: var(--text-secondary);
+            margin-right: 1rem;
+        }
+
+        /* Contact Section */
+        .contact-section {
+            text-align: center;
+            max-width: 60rem;
+            margin: 0 auto;
+        }
+
+        .contact-heading {
+            font-size: 5rem;
+            margin-bottom: 2rem;
+        }
+
+        .contact-subheading {
+            font-size: 1.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 4rem;
+        }
+
+        .contact-links {
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            margin-top: 4rem;
+        }
+
+        .contact-link {
+            font-size: 2.4rem;
+            width: 5rem;
+            height: 5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            transition: var(--transition);
+        }
+
+        .contact-link:hover {
+            background-color: var(--secondary-color);
+            color: var(--bg-primary);
+            transform: translateY(-5px);
+        }
+
+        /* Footer */
+        footer {
+            padding: 3rem 0;
+            text-align: center;
+            background-color: var(--bg-primary);
+            border-top: 1px solid rgba(204, 214, 246, 0.1);
+        }
+
+        .footer-text {
+            font-size: 1.4rem;
+            color: var(--text-secondary);
+        }
+
+        .footer-heart {
+            color: #ff6b6b;
+        }
+
+        .footer-link {
+            color: var(--secondary-color);
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease forwards;
+            opacity: 0;
+        }
+
+        .delay-1 { animation-delay: 0.1s; }
+        .delay-2 { animation-delay: 0.2s; }
+        .delay-3 { animation-delay: 0.3s; }
+        .delay-4 { animation-delay: 0.4s; }
+        .delay-5 { animation-delay: 0.5s; }
+
+        /* Responsive Design */
+        @media screen and (max-width: 1024px) {
+            html {
+                font-size: 58%;
+            }
+            
+            .container {
+                padding: 0 4rem;
+            }
+            
+            .header-title {
+                font-size: 5rem;
+            }
+        }
+
+        @media screen and (max-width: 768px) {
+            html {
+                font-size: 56%;
+            }
+            
+            .header-title {
+                font-size: 4.5rem;
+            }
+            
+            .projects-grid,
+            .skills-container,
+            .accomplishments-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .section-title-container {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .section-line {
+                display: none;
+            }
+        }
+
+        @media screen and (max-width: 480px) {
+            html {
+                font-size: 52%;
+            }
+            
+            .container {
+                padding: 0 2.5rem;
+            }
+            
+            .header-title {
+                font-size: 3.8rem;
+            }
+            
+            .header-subtitle {
+                font-size: 1.6rem;
+            }
+            
+            .job {
+                padding: 2rem;
+            }
+        }
+
+        /* Dark Mode Toggle */
+        .theme-switch {
+            position: fixed;
+            bottom: 3rem;
+            right: 3rem;
+            width: 5rem;
+            height: 5rem;
+            border-radius: 50%;
+            background-color: var(--bg-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 100;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+
+        .theme-switch:hover {
+            transform: translateY(-3px);
+        }
+
+        .theme-icon {
+            color: var(--secondary-color);
+            font-size: 2.2rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav-container">
+        <div class="container">
+            <div class="nav-content">
+                <a href="#" class="nav-logo">
+                    {% if resume.about.name is defined %}
+                        {% set name_parts = resume.about.name.split(' ') %}
+                        {% if name_parts|length > 1 %}
+                            {{ name_parts[0][0] + name_parts[1][0] }}
+                        {% else %}
+                            {{ name_parts[0][0] }}
+                        {% endif %}
+                    {% else %}
+                        Portfolio
+                    {% endif %}
+                </a>
+                <ul class="nav-links">
+                    <li><a href="#about" class="nav-link"><span class="nav-number">01.</span>About</a></li>
+                    <li><a href="#experience" class="nav-link"><span class="nav-number">02.</span>Experience</a></li>
+                    <li><a href="#projects" class="nav-link"><span class="nav-number">03.</span>Projects</a></li>
+                    <li><a href="#contact" class="nav-link"><span class="nav-number">04.</span>Contact</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Header/Hero Section -->
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <p class="header-subtitle fade-in">Hi, my name is</p>
+                <h1 class="header-title fade-in delay-1">{{ resume.about.name }}</h1>
+                <p class="header-description fade-in delay-2">
+                    {% if resume.about.summary is defined %}
+                        {{ resume.about.summary }}
+                    {% else %}
+                        I'm an IT professional specializing in 
+                        {% if resume.skills is defined and resume.skills %}
+                            {% set top_skills = [] %}
+                            {% for skill_group in resume.skills %}
+                                {% if skill_group.category == "Programming Languages" and skill_group.skills|length > 0 %}
+                                    {% for skill in skill_group.skills %}
+                                        {% if loop.index <= 3 and (top_skills.append(skill) or True) %}{% endif %}
+                                    {% endfor %}
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if top_skills|length > 0 %}
+                                {{ top_skills[0] }}{% if top_skills|length > 1 %}, {{ top_skills[1] }}{% endif %}{% if top_skills|length > 2 %} and {{ top_skills[2] }}{% endif %}.
+                            {% else %}
+                                technology solutions that solve complex problems.
+                            {% endif %}
+                        {% else %}
+                            technology solutions that solve complex problems.
+                        {% endif %}
+                    {% endif %}
+                </p>
+                <a href="#contact" class="header-cta fade-in delay-3">Get In Touch</a>
+            </div>
+        </div>
+    </header>
+    
+    <main>
+        <!-- About Section -->
+        <section id="about">
+            <div class="container">
+                <div class="section-title-container">
+                    <span class="section-number">01.</span>
+                    <h2 class="section-title">Education</h2>
+                    <div class="section-line"></div>
+                </div>
+                
+                <!-- Education Section -->
+                <h3>Education</h3>
+                {% if resume.education is defined and resume.education %}
+                    {% for edu in resume.education %}
+                    <div class="education-item fade-in">
+                        <h4 class="education-degree">{{ edu.degree }}</h4>
+                        <p class="education-school">{{ edu.university }}{% if edu.location is defined %}, {{ edu.location }}{% endif %}</p>
+                        <p class="education-date">{{ edu.period }}</p>
+                        
+                        {% if edu.related_coursework is defined and edu.related_coursework %}
+                        <div class="education-courses">
+                            <div class="education-courses-title">Related Coursework:</div>
+                            <div class="education-courses-list">
+                                {% for course in edu.related_coursework %}
+                                <span class="education-course">{{ course }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if edu.gpa is defined %}
+                        <div class="education-gpa">GPA: {{ edu.gpa }}</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p>Education details not available</p>
+                {% endif %}
+            </div>
+        </section>
+        
+        <!-- Accomplishments Section -->
+        <section id="accomplishments">
+            <div class="container">
+                <div class="section-title-container">
+                    <span class="section-number">01.5</span>
+                    <h2 class="section-title">Accomplishments</h2>
+                    <div class="section-line"></div>
+                </div>
+                
+                <div class="accomplishments-container">
+                    {% if resume.accomplishments is defined and resume.accomplishments %}
+                        {% for accomplishment in resume.accomplishments %}
+                        <div class="accomplishment-item fade-in">
+                            <h4 class="accomplishment-title">{{ accomplishment.title }}</h4>
+                            <p class="accomplishment-date">{{ accomplishment.date }}</p>
+                            {% if accomplishment.link is defined %}
+                            <a href="{{ accomplishment.link }}" target="_blank" rel="noopener noreferrer">View Details →</a>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p>No accomplishments listed</p>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+        
+        <!-- Skills Section -->
+        <section id="skills">
+            <div class="container">
+                <div class="section-title-container">
+                    <span class="section-number">01.75</span>
+                    <h2 class="section-title">Skills</h2>
+                    <div class="section-line"></div>
+                </div>
+                
+                <div class="skills-container">
+                    {% if resume.skills is defined and resume.skills %}
+                        {% for skill_group in resume.skills %}
+                        <div class="skill-category fade-in">
+                            <h3 class="skill-title">{{ skill_group.category }}</h3>
+                            <div class="skill-list">
+                                {% for skill in skill_group.skills %}
+                                <span class="skill-tag">{{ skill }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p>Skills information not available</p>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+        
+        <!-- Experience Section -->
+        <section id="experience">
+            <div class="container">
+                <div class="section-title-container">
+                    <span class="section-number">02.</span>
+                    <h2 class="section-title">Where I've Worked</h2>
+                    <div class="section-line"></div>
+                </div>
+                
+                {% if resume.experience is defined and resume.experience %}
+                    {% for job in resume.experience %}
+                    <div class="job fade-in">
+                        <h3 class="job-title">{{ job.position }}</h3>
+                        <p class="job-company">{{ job.company }}</p>
+                        <p class="job-duration">
+                            {{ job.period }}
+                            {% if job.location is defined %}
+                            <span class="job-location">{{ job.location }}</span>
+                            {% endif %}
+                        </p>
+                        <ul>
+                            {% if job.responsibilities is defined %}
+                                {% for responsibility in job.responsibilities %}
+                                <li>{{ responsibility }}</li>
+                                {% endfor %}
+                            {% endif %}
+                        </ul>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p>Work experience information not available</p>
+                {% endif %}
+            </div>
+        </section>
+        
+        <!-- Projects Section -->
+        <section id="projects">
+            <div class="container">
+                <div class="section-title-container">
+                    <span class="section-number">03.</span>
+                    <h2 class="section-title">Some Things I've Built</h2>
+                    <div class="section-line"></div>
+                </div>
+                
+                <div class="projects-grid">
+                    {% if resume.projects is defined and resume.projects %}
+                        {% for project in resume.projects %}
+                        <div class="project-card fade-in">
+                            <div class="project-top">
+                                <i class="fas fa-folder-open project-folder"></i>
+                                <div class="project-links">
+                                    {% if project.url is defined %}
+                                    <a href="{{ project.url }}" class="project-link" target="_blank" rel="noopener noreferrer"><i class="fab fa-github"></i></a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <h3 class="project-title">{{ project.name }}</h3>
+                            <p class="project-description">{{ project.description }}</p>
+                            <div class="project-tech">
+                                {% if project.technologies is defined %}
+                                    {% for tech in project.technologies %}
+                                    <span class="project-tech-item">{{ tech }}</span>
+                                    {% if not loop.last %} • {% endif %}
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p>No projects listed</p>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+        
+        <!-- Contact Section -->
+        <section id="contact">
+            <div class="container">
+                <div class="contact-section fade-in">
+                    <span class="section-number">04.</span>
+                    <h2 class="contact-heading">Get In Touch</h2>
+                    <p class="contact-subheading">
+                        I'm currently looking for new opportunities. Whether you have a question or just want to say hi, I'll get back to you!
+                    </p>
+                    {% if resume.about is defined %}
+                        {% if resume.about.email is defined %}
+                        <p>{{ resume.about.email }}</p>
+                        {% endif %}
+                        {% if resume.about.phone is defined %}
+                        <p>{{ resume.about.phone }}</p>
+                        {% endif %}
+                        {% if resume.about.location is defined %}
+                        <p>{{ resume.about.location }}</p>
+                        {% endif %}
+                    {% endif %}
+                    
+                    <div class="contact-links">
+                        {% if resume.about is defined and resume.about.linkedin_hyperlink is defined %}
+                        <a href="{{ resume.about.linkedin_hyperlink }}" class="contact-link" target="_blank" rel="noopener noreferrer">
+                            <i class="fab fa-linkedin-in"></i>
+                        </a>
+                        {% endif %}
+                        {% if resume.about is defined and resume.about.github_hyperlink is defined %}
+                        <a href="{{ resume.about.github_hyperlink }}" class="contact-link" target="_blank" rel="noopener noreferrer">
+                            <i class="fab fa-github"></i>
+                        </a>
+                        {% endif %}
+                        {% if resume.about is defined and resume.about.email is defined %}
+                        <a href="mailto:{{ resume.about.email }}" class="contact-link">
+                            <i class="fas fa-envelope"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+    
+    <footer>
+        <div class="container">
+            <p class="footer-text">
+                Designed & Built with <span class="footer-heart">❤</span> by {{ resume.about.name|default('Portfolio Generator') }} © <span id="current-year">2025</span>
+            </p>
+        </div>
+    </footer>
+    
+    <div class="theme-switch">
+        <i class="fas fa-moon theme-icon"></i>
+    </div>
+    
+    <script>
+        // Set current year
+        document.getElementById('current-year').textContent = new Date().getFullYear();
+        
+        // Scroll Animation
+        document.addEventListener('DOMContentLoaded', () => {
+            // Navbar scroll behavior
+            const navbar = document.querySelector('.nav-container');
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 50) {
+                    navbar.classList.add('scrolled');
+                } else {
+                    navbar.classList.remove('scrolled');
+                }
+            });
+            
+            // Fade in animations for elements
+            const fadeElements = document.querySelectorAll('.fade-in');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = 1;
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            }, { threshold: 0.1 });
+            
+            fadeElements.forEach(element => {
+                observer.observe(element);
+            });
+            
+            // Smooth scrolling for anchor links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    document.querySelector(this.getAttribute('href')).scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                });
+            });
+            
+            // Theme switcher functionality
+            const themeSwitch = document.querySelector('.theme-switch');
+            const themeIcon = document.querySelector('.theme-icon');
+            let isDarkMode = true;
+            
+            themeSwitch.addEventListener('click', () => {
+                if (isDarkMode) {
+                    document.documentElement.style.setProperty('--bg-primary', '#f8f9fa');
+                    document.documentElement.style.setProperty('--bg-secondary', '#ffffff');
+                    document.documentElement.style.setProperty('--text-primary', '#212529');
+                    document.documentElement.style.setProperty('--text-secondary', '#495057');
+                    themeIcon.classList.remove('fa-moon');
+                    themeIcon.classList.add('fa-sun');
+                } else {
+                    document.documentElement.style.setProperty('--bg-primary', '#0a192f');
+                    document.documentElement.style.setProperty('--bg-secondary', '#112240');
+                    document.documentElement.style.setProperty('--text-primary', '#ccd6f6');
+                    document.documentElement.style.setProperty('--text-secondary', '#8892b0');
+                    themeIcon.classList.remove('fa-sun');
+                    themeIcon.classList.add('fa-moon');
+                }
+                isDarkMode = !isDarkMode;
+            });
+        });
+    </script>
+</body>
+</html>

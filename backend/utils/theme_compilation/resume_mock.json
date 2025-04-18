@@ -1,0 +1,156 @@
+{
+    "about": {
+        "email": "deopurkar.a@northeastern.edu",
+        "linkedin_hyperlink": "https://www.linkedin.com/in/ankit-deopurkar/",
+        "location": "Boston, MA",
+        "name": "Ankit Deopurkar",
+        "phone": "857-339-9015"
+    },
+    "education": [
+        {
+            "degree": "Master of Science in Information Systems",
+            "gpa": "3.7/4",
+            "location": "Boston, MA",
+            "period": "Expected May 2026",
+            "related_coursework": [
+                "Data Science Engineering Methods & Tools",
+                "Application Engineering & Development",
+                "Big-Data Systems and Intelligence Analytics and Data Management and Data Design"
+            ],
+            "university": "Northeastern University"
+        },
+        {
+            "degree": "Bachelor of Engineering in Electronics Engineering",
+            "location": "Mumbai, INDIA",
+            "period": "Aug 2017 - Jun 2021",
+            "university": "University Of Mumbai"
+        }
+    ],
+    "experience": [
+        {
+            "company": "KPMG India",
+            "location": "Mumbai, INDIA",
+            "period": "Apr 2022 \u2013 Jul 2024",
+            "position": "Software Engineer",
+            "responsibilities": [
+                "Developed Python-based financial risk APIs for investment banks, supporting real-time credit risk evaluations.",
+                "Optimized multi-threaded ETL pipelines handling 100M+ transactions daily, reducing processing time by 60%.",
+                "Built automated trading and risk analysis systems with FastAPI and Flask, reducing manual reporting efforts by 45%.",
+                "Migrated monolithic banking apps to Python-based microservices on AWS, cutting operational costs by 30%",
+                "Implemented fraud detection models using Kafka, Spark, and ML, improving detection rates by 40%"
+            ]
+        },
+        {
+            "company": "Network Marvels",
+            "location": "Mumbai, INDIA",
+            "period": "Jun 2021 \u2013 Mar 2022",
+            "position": "Software Engineer",
+            "responsibilities": [
+                "Prepared a multi-disk security system using C++ and C# with AES-256 encryption, enhancing system integrity by 43.3% and ensuring compliance with military-grade security standards",
+                "Designed a pipeline for data transfer across the Windows Registry in C++ which allowed transfer of SHA-256 encrypted data from disk drive to other Operating Systems",
+                "Conducted data-driven testing, including UAT and SQL-based backend validation, ensuring system reliability and data accuracy"
+            ]
+        }
+    ],
+    "projects": [
+        {
+            "description": "Built a scalable web scraping system using BeautifulSoup, Firecrawl, and a PDF parser to extract unstructured data from online sources\n\u2022 Developed an API using FastAPI to expose extracted data, allowing seamless integration with other applications\n\u2022 Designed an interactive Streamlit dashboard for real-time visualization and exploration of extracted datasets",
+            "name": "Web Scraping & Automated Data Extraction",
+            "technologies": [
+                "BeautifulSoup",
+                "Firecrawl",
+                "PDF parser",
+                "FastAPI",
+                "Streamlit"
+            ]
+        },
+        {
+            "description": "Built a FastAPI web scraper to extract dataset links from financial websites, automating data ingestion\n\u2022 Designed a multi-format data storage architecture (JSON, raw, denormalized) to support ETL workflows and improve data accessibility\n\u2022 Created an Airflow DAG for data validation and staging using DBT, ensuring data integrity before loading into Snowflake",
+            "name": "Fundamental and Financial Data Extraction",
+            "technologies": [
+                "FastAPI",
+                "JSON",
+                "Airflow",
+                "DBT",
+                "Snowflake"
+            ]
+        },
+        {
+            "description": "Built an end-to-end predictive analytics tool using Python, SQL, and Scikit-Learn to forecast library fee delays and analyze reader behavior\n\u2022 Implemented K-Means clustering to segment readers and generate data-driven recommendations for personalized library services\n\u2022 Developed a Flask-based web app for administrators, providing real-time insights on reader preferences and overdue patterns",
+            "name": "Library Analytics Tool",
+            "technologies": [
+                "Python",
+                "SQL",
+                "Scikit-Learn",
+                "K-Means clustering",
+                "Flask"
+            ]
+        }
+    ],
+    "skills": [
+        {
+            "category": "Programming Languages",
+            "skills": [
+                "Java",
+                "Python",
+                "C++",
+                "C",
+                "JavaScript",
+                "C#"
+            ]
+        },
+        {
+            "category": "Software Development",
+            "skills": [
+                "Object-Oriented Programming (OOP)",
+                "Design Patterns",
+                "RESTful APIs",
+                "Microservices",
+                "Multithreading",
+                "Unit Testing"
+            ]
+        },
+        {
+            "category": "Cloud & DevOps",
+            "skills": [
+                "AWS (EC2, S3, Lambda, API Gateway)",
+                "Docker",
+                "Kubernetes",
+                "Jenkins",
+                "Git",
+                "Linux"
+            ]
+        },
+        {
+            "category": "Web & Backend Development",
+            "skills": [
+                "FastAPI",
+                "Flask",
+                "Django",
+                "Spring Boot",
+                "Node.js",
+                "Express.js"
+            ]
+        },
+        {
+            "category": "Databases",
+            "skills": [
+                "PostgreSQL",
+                "MySQL",
+                "MongoDB",
+                "Oracle Cloud"
+            ]
+        },
+        {
+            "category": "Libraries & Frameworks",
+            "skills": [
+                "NumPy",
+                "Pandas",
+                "TensorFlow",
+                "Sci-Kit Learn",
+                "PySpark",
+                "Kafka"
+            ]
+        }
+    ]
+}

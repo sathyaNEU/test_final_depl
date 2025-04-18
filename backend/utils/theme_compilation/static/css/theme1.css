@@ -1,0 +1,20 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #fafafa;
+    color: #222;
+    margin: 0;
+    padding: 0;
+    animation: fadeIn 0.5s ease;
+}
+.container {
+    max-width: 900px;
+    margin: auto;
+    padding: 2rem;
+}
+section {
+    margin-bottom: 2rem;
+}
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
