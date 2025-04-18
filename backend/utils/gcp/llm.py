@@ -14,27 +14,10 @@ from google.oauth2 import service_account
 from google.cloud import secretmanager
 import os
 from dotenv import load_dotenv
-
-
+from google.oauth2 import service_account
 
 load_dotenv()
 
-# def get_gcp_credentials():
-#     """
-#     Fetches GCP credentials from Google Secret Manager.
-#     """
-#     client = secretmanager.SecretManagerServiceClient()
-#     secret_name = "gcp-service-account-key"
-#     project_id = os.getenv("GOOGLE_VERTEX_PROJECT")
-#     name = f"projects/{project_id}/secrets/{secret_name}/versions/latest"
-
-#     # Access the secret version
-#     response = client.access_secret_version(request={"name": name})
-#     return json.loads(response.payload.data.decode("UTF-8"))
-
-
-# secrets_json = get_gcp_credentials()
-# credentials = service_account.Credentials.from_service_account_info(secrets_json)
 
 
 
