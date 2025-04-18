@@ -99,7 +99,7 @@ def llm(description):
   return data['technical_skills']
 
 
-def generate_qa(site_as_md):
+def generate_qa(skill, site_as_md):
     client = genai.Client(
       vertexai=True,
       project="bigdata-456820",
@@ -112,7 +112,7 @@ def generate_qa(site_as_md):
     types.Content(
       role="user",
       parts=[
-        types.Part.from_text(text=user_qa_datagen_prompt.format(site_as_md))
+        types.Part.from_text(text=user_qa_datagen_prompt.format(skill, site_as_md))
       ]
     ),
     ]
@@ -150,3 +150,5 @@ def generate_qa(site_as_md):
     if 'qa_pairs' not in validated_data:
         return -1     
     return validated_data['qa_pairs']
+  
+  

@@ -1,19 +1,20 @@
 from airflow import DAG
-from airflow.decorators import task
+from airflow.operators.empty import EmptyOperator
+from airflow.decorators import task, branch_task
 from airflow.operators.python import get_current_context
 from datetime import datetime
-from utils.firecrawl.core import scrape_this_site
-from utils.snowflake.core import write_qa
-from utils.llm.core import generate_qa
+from utils.snowflake.core import write_qa, is_skill_exist_via, distinct_skills, random_n_qa, bind_qa
 from utils.s3.core import get_s3_client, write_markdown_to_s3
-from utils.haystack.pipeline import doc_splitter
-from haystack_integrations.components.rankers.cohere import CohereRanker
-from haystack.dataclasses.byte_stream import ByteStream
-import time
+from utils.langgraph.pipeline import lang_qa_pipeline
+from utils.tavily.core import web_api
 from uuid import uuid4
-import random
 from dotenv import load_dotenv
 load_dotenv()
+
+# this dag will always accept params in this format:
+# { user_email:str
+#   skills: list
+#}
 
 with DAG(
     dag_id='qa_pipeline',
@@ -24,43 +25,66 @@ with DAG(
     @task
     def extract_links():
         context = get_current_context()
-        links_conf = context["dag_run"].conf
-        return links_conf
+        state = context["dag_run"].conf
+        return state
 
     @task
-    def qa_using_llm(links):
-        _doc_splitter = doc_splitter()
-        # core validation functionality using cohere ranker
-        ranker = CohereRanker()
+    def qa_using_llm(state):
+        skills = state['skills']
+        # filter skills not in snowflake
+        _distinct_skills = distinct_skills(skills)
+        _distinct_skills = [skill_item['SKILLS'] for skill_item in _distinct_skills]
+        skills_to_process = list(set(skills) - set(_distinct_skills))
+        links = {skill: web_api(skill) for skill in skills_to_process}
+        print('tavily output', links)
         for skill, _links in links.items():
             skill = skill.lower()
+            print(f'================== {skill} ==================')
             for link in _links:
-                site_as_md = scrape_this_site(link)
-                md_stream = ByteStream(data=site_as_md.encode("utf-8"), mime_type="text/markdown")
-                docs = _doc_splitter.run({"md_file_converter": {"sources": [md_stream]}})['splitter']['documents']
-                qa = generate_qa(site_as_md)
-                if isinstance(qa, int):
-                    continue
-                #batch insert
-                markdown_str =""
-                insert_data = []
-                for row in qa:
-                    q,a = row["question"], row["answer"]
-                    doc = ranker.run(query=q+a, documents=docs, top_k=1)['documents'][0]
-                    if doc.score > 0.96:
-                        insert_data.append((skill, q, a))
-                    markdown_str += f"### Question:\n{q}\n\n"
-                    markdown_str += f"**Answer:**\n{a}\n\n"
-                    markdown_str += f"**Context:**\n{doc.content}\n\n"
-                    markdown_str += f"**Score:** `{doc.score}`\n\n"
-                    markdown_str += "---\n\n"
-                    delay = random.uniform(4, 10)
-                    print(f"sleeping {delay} to avoid rate limits")
-                    time.sleep(delay)
-                row_count = write_qa(insert_data)
-                write_markdown_to_s3(get_s3_client(), markdown_str, f"validations/{skill}/{uuid4()}.md")
-                print("{} -> loaded {} rows".format(skill, row_count))
-    links = extract_links()
-    qa_using_llm(links) 
+                # print('checking this link in snowflake', link)
+                mode = state.get("mode", "").lower()
+                print('mode : ', mode)
+                skill_exists = is_skill_exist_via('SKILL', skill) if mode=='import_qa' else is_skill_exist_via('SOURCE', link)
+                if skill_exists:
+                    print(f"skipping agentic pipeline, since skill exist")
+                if not skill_exists:
+                    input_state = {
+                        "skill" : skill,
+                        "insert_data":[],
+                        "current_link": link,
+                        "exclude_domains": [],
+                        "retry_count": 0  # Start with 0 retries
+                    }
+                    lang_state = lang_qa_pipeline().invoke(input_state)
+                    insert_data = lang_state['insert_data']
+                    if insert_data:
+                        row_count = write_qa(insert_data)
+                        write_markdown_to_s3(get_s3_client(), lang_state['report_data'], f"validations/{skill}/{uuid4()}.md")
+                        print("{} -> loaded {} rows".format(skill, row_count))
+                    else:
+                        print("Agent tried to look for alternatives, unfortunately the data from web, did not meet the platform standards")
+        return state
+    
+    @branch_task
+    def route_based_on_mode(state):
+        mode = state["mode"]
+        print("selected mode :", mode)
+        if mode == "import_qa":
+            return "gf_task"
+        else:
+            return "end_task"  
+        
+    @task(task_id="gf_task")
+    def gf_task(state):
+        skills = state['skills']  
+        prep_qa = random_n_qa(skills=skills)
+        bind_qa(state["dag_run_id"],prep_qa)
+        
+    end_task = EmptyOperator(task_id="end_task")
+
+    state = extract_links()
+    intm_state = qa_using_llm(state)
+    mode_branch = route_based_on_mode(intm_state)
+    mode_branch >> [gf_task(intm_state), end_task]
     
     

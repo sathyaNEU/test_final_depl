@@ -20,3 +20,7 @@ cohere-haystack
 haystack-ai
 snowflake-connector-python[pandas]
 google-genai
+langchain
+langgraph
+mistralai
+langchain_mistralai
