@@ -4,7 +4,6 @@ import fitz
 from typing import TypedDict, Optional, Dict
 from dotenv import load_dotenv 
 import json
-from utils.litellm.core import llm
 from utils.helper import * 
 import requests
 from io import BytesIO
@@ -102,7 +101,6 @@ def get_structured_data(user_email, changes, mode='generate'):
 
             # Extract text 
             if valid_resume:
-                logging.info("valid r")
                 if mode=='generate':
                     data = extracted_text
                 else:

@@ -4,8 +4,6 @@ import os
 import json
 import pandas as pd
 
-
-
 def sf_client():
   conn = sf.connect(
     user=os.getenv('SF_USER'),
@@ -19,13 +17,31 @@ def sf_client():
   return conn
 
 
-def get_this_column(user_email, column):
-  conn = sf_client()
-  cursor = conn.cursor()
-  select_query = f"select {column} from user_artifacts WHERE user_email = %s"
-  data = cursor.execute(select_query, (user_email)).fetchone()[0]
-  cursor.close()
-  return data
+def get_this_column(user_email, columns):
+    if isinstance(columns, str):
+        columns_str = columns
+    elif isinstance(columns, list):
+        columns_str = ", ".join(columns)
+    else:
+        raise ValueError("columns must be a string or list of strings")
+
+    conn = sf_client()
+    cursor = conn.cursor()
+    select_query = f"SELECT {columns_str} FROM user_artifacts WHERE user_email = %s"
+    cursor.execute(select_query, (user_email,))
+    result = cursor.fetchone()
+    cursor.close()
+    if result is None:
+        return None
+
+    if isinstance(columns, str):
+        return result[0]
+    else:
+        return dict(zip(columns, result))
+
+
+
+
 
 def update_this_column(user_email, column, data):
   conn = sf_client()

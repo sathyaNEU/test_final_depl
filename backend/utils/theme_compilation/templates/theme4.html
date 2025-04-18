@@ -1,0 +1,1449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ resume.about.name|default('Developer Portfolio') }}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap">
+    <style>
+        /* Variables */
+        :root {
+            --primary: #34495e;        /* Slate blue */
+            --primary-dark: #2c3e50;   /* Dark slate blue */
+            --primary-light: #4a6785;  /* Light slate blue */
+            --accent: #e74c3c;         /* Red accent */
+            --accent-light: #ff6b6b;   /* Light red accent */
+            --accent-dark: #c0392b;    /* Dark red accent */
+            --text-light: #ecf0f1;     /* Light text */
+            --text-dark: #2c3e50;      /* Dark text */
+            --bg-light: #f5f7fa;       /* Light background */
+            --bg-dark: #2c3e50;        /* Dark background */
+            --bg-gray: #ebedf0;        /* Gray background */
+            --shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            --shadow-soft: 0 5px 15px rgba(0, 0, 0, 0.05);
+            --radius: 8px;
+            --transition: all 0.3s ease;
+        }
+
+        /* Reset & Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            font-size: 62.5%; /* 10px = 1rem */
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.6rem;
+            line-height: 1.6;
+            color: var(--text-dark);
+            background-color: var(--bg-light);
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            line-height: 1.3;
+            margin-bottom: 2rem;
+            color: var(--primary-dark);
+        }
+
+        h1 {
+            font-size: 5rem;
+        }
+
+        h2 {
+            font-size: 3.6rem;
+            position: relative;
+            margin-bottom: 4rem;
+        }
+
+        h2:after {
+            content: "";
+            position: absolute;
+            left: 0;
+            bottom: -1rem;
+            width: 8rem;
+            height: 0.4rem;
+            background: var(--accent);
+        }
+
+        h3 {
+            font-size: 2.4rem;
+        }
+
+        p {
+            margin-bottom: 2rem;
+        }
+
+        a {
+            color: var(--accent);
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        a:hover {
+            color: var(--accent-dark);
+        }
+
+        ul {
+            list-style: none;
+        }
+
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* Utilities */
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .section {
+            padding: 10rem 0;
+        }
+
+        .section-dark {
+            background-color: var(--primary);
+            color: var(--text-light);
+        }
+
+        .section-dark h2 {
+            color: var(--text-light);
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .text-left {
+            text-align: left;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 1.2rem 3rem;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 5rem;
+            font-size: 1.6rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            text-transform: uppercase;
+            letter-spacing: 0.1rem;
+            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+        }
+
+        .btn:hover {
+            background: var(--accent-dark);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(231, 76, 60, 0.4);
+            color: white;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--accent);
+            color: var(--accent);
+            box-shadow: none;
+        }
+
+        .btn-outline:hover {
+            background: var(--accent);
+            color: white;
+        }
+
+        .center-content {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Grid System */
+        .grid {
+            display: grid;
+            grid-gap: 3rem;
+        }
+
+        .grid-2 {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .grid-3 {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .grid-4 {
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        /* Header & Navigation */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: var(--primary);
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem 0;
+            transition: var(--transition);
+        }
+
+        .header.scrolled {
+            padding: 1rem 0;
+            background-color: var(--primary-dark);
+        }
+
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 2.4rem;
+            font-weight: 700;
+            color: var(--text-light);
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .logo span {
+            color: var(--accent);
+        }
+
+        .nav-menu {
+            display: flex;
+            align-items: center;
+        }
+
+        .nav-item {
+            margin: 0 1.5rem;
+        }
+
+        .nav-link {
+            color: var(--text-light);
+            font-weight: 500;
+            position: relative;
+            font-size: 1.6rem;
+        }
+
+        .nav-link:hover {
+            color: var(--accent);
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            background: var(--accent);
+            bottom: -5px;
+            left: 0;
+            transition: var(--transition);
+        }
+
+        .nav-link:hover::after {
+            width: 100%;
+        }
+
+        .mobile-toggle {
+            display: none;
+            cursor: pointer;
+            font-size: 2.4rem;
+            color: var(--text-light);
+        }
+
+        /* Hero Section */
+        .hero {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            background-color: var(--primary);
+            color: var(--text-light);
+            padding-top: 8rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(52, 73, 94, 0.9) 0%, rgba(44, 62, 80, 0.9) 100%);
+            z-index: 1;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            max-width: 800px;
+        }
+
+        .hero-greeting {
+            font-size: 2rem;
+            font-weight: 500;
+            color: var(--accent);
+            margin-bottom: 1rem;
+            opacity: 0;
+            animation: fadeUp 1s ease forwards;
+        }
+
+        .hero-title {
+            font-size: 6rem;
+            margin-bottom: 2rem;
+            line-height: 1.2;
+            color: var(--text-light);
+            opacity: 0;
+            animation: fadeUp 1s ease forwards 0.3s;
+        }
+
+        .hero-subtitle {
+            font-size: 2.4rem;
+            margin-bottom: 3rem;
+            color: var(--text-light);
+            opacity: 0.9;
+            opacity: 0;
+            animation: fadeUp 1s ease forwards 0.6s;
+        }
+
+        .hero-btns {
+            display: flex;
+            gap: 2rem;
+            opacity: 0;
+            animation: fadeUp 1s ease forwards 0.9s;
+        }
+
+        /* About Section */
+        .about {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .about-content {
+            display: flex;
+            gap: 5rem;
+            align-items: center;
+        }
+
+        .about-text {
+            flex: 1;
+        }
+
+        .about-description {
+            font-size: 1.8rem;
+            margin-bottom: 3rem;
+        }
+
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 3rem;
+            margin-top: 5rem;
+        }
+
+        .skill-card {
+            background-color: white;
+            padding: 3rem;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-soft);
+            transition: var(--transition);
+        }
+
+        .skill-card:hover {
+            transform: translateY(-10px);
+            box-shadow: var(--shadow);
+        }
+
+        .skill-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .skill-icon {
+            width: 5rem;
+            height: 5rem;
+            background-color: var(--primary-light);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.4rem;
+            margin-right: 1.5rem;
+        }
+
+        .skill-title {
+            font-size: 2rem;
+            margin-bottom: 0;
+        }
+
+        .skill-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .skill-tag {
+            padding: 0.8rem 1.5rem;
+            background-color: var(--bg-gray);
+            border-radius: 5rem;
+            font-size: 1.4rem;
+            transition: var(--transition);
+        }
+
+        .skill-tag:hover {
+            background-color: var(--accent);
+            color: white;
+        }
+
+        /* Education Section */
+        .education {
+            background-color: var(--primary);
+            position: relative;
+        }
+
+        .education h2 {
+            color: var(--text-light);
+            text-align: center;
+        }
+
+        .education h2:after {
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .education-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 3rem;
+        }
+
+        .education-card {
+            background-color: white;
+            padding: 3rem;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .education-card:hover {
+            transform: translateY(-10px);
+        }
+
+        .education-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 5px;
+            background-color: var(--accent);
+        }
+
+        .education-degree {
+            font-size: 2.2rem;
+            color: var(--primary-dark);
+            margin-bottom: 1rem;
+        }
+
+        .education-institution {
+            font-size: 1.8rem;
+            color: var(--accent);
+            font-weight: 500;
+            margin-bottom: 1rem;
+        }
+
+        .education-location {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-dark);
+            margin-bottom: 1rem;
+        }
+
+        .education-date {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-dark);
+            font-size: 1.4rem;
+            margin-bottom: 2rem;
+        }
+
+        .education-courses-title {
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .courses-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            margin-bottom: 2rem;
+        }
+
+        .course-tag {
+            background-color: var(--bg-gray);
+            padding: 0.5rem 1rem;
+            border-radius: 5rem;
+            font-size: 1.3rem;
+            transition: var(--transition);
+        }
+
+        .course-tag:hover {
+            background-color: var(--accent-light);
+            color: white;
+        }
+
+        .education-gpa {
+            font-weight: 500;
+        }
+
+        /* Experience Section */
+        .experience {
+            position: relative;
+        }
+
+        .experience-timeline {
+            position: relative;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem 0;
+        }
+
+        .experience-timeline::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 100%;
+            background-color: var(--primary-light);
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 6rem;
+            width: 100%;
+        }
+
+        .timeline-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .timeline-content {
+            position: relative;
+            width: calc(50% - 4rem);
+            padding: 3rem;
+            background-color: white;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-soft);
+            transition: var(--transition);
+        }
+
+        .timeline-content:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow);
+        }
+
+        .timeline-item:nth-child(odd) .timeline-content {
+            left: 0;
+        }
+
+        .timeline-item:nth-child(even) .timeline-content {
+            left: calc(50% + 4rem);
+        }
+
+        .timeline-dot {
+            position: absolute;
+            top: 3rem;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 50%;
+            background-color: var(--accent);
+            border: 4px solid white;
+            box-shadow: var(--shadow-soft);
+            z-index: 1;
+        }
+
+        .timeline-item:nth-child(odd) .timeline-content::after {
+            content: '';
+            position: absolute;
+            top: 3rem;
+            right: -1.5rem;
+            width: 0;
+            height: 0;
+            border-top: 15px solid transparent;
+            border-bottom: 15px solid transparent;
+            border-left: 15px solid white;
+        }
+
+        .timeline-item:nth-child(even) .timeline-content::after {
+            content: '';
+            position: absolute;
+            top: 3rem;
+            left: -1.5rem;
+            width: 0;
+            height: 0;
+            border-top: 15px solid transparent;
+            border-bottom: 15px solid transparent;
+            border-right: 15px solid white;
+        }
+
+        .timeline-position {
+            font-size: 2.2rem;
+            color: var(--accent);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .timeline-company {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .timeline-period {
+            font-size: 1.4rem;
+            color: var(--text-dark);
+            opacity: 0.7;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .timeline-location {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-left: 1rem;
+        }
+
+        .timeline-duties {
+            margin-top: 2rem;
+        }
+
+        .timeline-duties-title {
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .duties-list {
+            padding-left: 1.5rem;
+        }
+
+        .duty-item {
+            position: relative;
+            margin-bottom: 1rem;
+            padding-left: 1.5rem;
+        }
+
+        .duty-item::before {
+            content: '▹';
+            position: absolute;
+            left: 0;
+            color: var(--accent);
+            font-size: 1.6rem;
+        }
+
+        /* Projects Section */
+        .projects {
+            background-color: var(--primary);
+            position: relative;
+        }
+
+        .projects h2 {
+            color: var(--text-light);
+            text-align: center;
+        }
+
+        .projects h2:after {
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 3rem;
+        }
+
+        .project-card {
+            background-color: white;
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .project-card:hover {
+            transform: translateY(-10px);
+        }
+
+        .project-header {
+            height: 15rem;
+            background: var(--primary-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: white;
+        }
+
+        .project-body {
+            padding: 3rem;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .project-title {
+            font-size: 2.2rem;
+            margin-bottom: 1rem;
+        }
+
+        .project-description {
+            margin-bottom: 2rem;
+            flex-grow: 1;
+        }
+
+        .project-tech {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .tech-tag {
+            background-color: var(--bg-gray);
+            padding: 0.5rem 1rem;
+            border-radius: 5rem;
+            font-size: 1.3rem;
+            transition: var(--transition);
+        }
+
+        .tech-tag:hover {
+            background-color: var(--accent-light);
+            color: white;
+        }
+
+        .project-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .project-link {
+            font-size: 1.8rem;
+            color: var(--primary-dark);
+            transition: var(--transition);
+        }
+
+        .project-link:hover {
+            color: var(--accent);
+        }
+
+        /* Accomplishments Section */
+        .accomplishments {
+            position: relative;
+        }
+
+        .accomplishments-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 3rem;
+        }
+
+        .accomplishment-card {
+            background-color: white;
+            padding: 3rem;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-soft);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .accomplishment-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow);
+        }
+
+        .accomplishment-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background-color: var(--accent);
+        }
+
+        .accomplishment-title {
+            font-size: 2rem;
+            color: var(--primary-dark);
+            margin-bottom: 1rem;
+        }
+
+        .accomplishment-date {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-dark);
+            margin-bottom: 2rem;
+            font-size: 1.4rem;
+        }
+
+        /* Contact Section */
+        .contact {
+            background-color: var(--primary);
+            position: relative;
+            color: var(--text-light);
+            text-align: center;
+        }
+
+        .contact h2 {
+            color: var(--text-light);
+            text-align: center;
+        }
+
+        .contact h2:after {
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .contact-content {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .contact-text {
+            font-size: 1.8rem;
+            margin-bottom: 3rem;
+        }
+
+        .contact-info {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 3rem;
+            margin-bottom: 4rem;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 1.6rem;
+            color: var(--text-light);
+        }
+
+        .contact-item i {
+            font-size: 2rem;
+            color: var(--accent);
+        }
+
+        .contact-cta {
+            margin-bottom: 4rem;
+        }
+
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+        }
+
+        .social-link {
+            width: 5rem;
+            height: 5rem;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: var(--text-light);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            transition: var(--transition);
+        }
+
+        .social-link:hover {
+            background-color: var(--accent);
+            color: white;
+            transform: translateY(-5px);
+        }
+
+        /* Footer */
+        .footer {
+            background-color: var(--primary-dark);
+            color: var(--text-light);
+            padding: 3rem 0;
+            text-align: center;
+        }
+
+        .footer-text {
+            opacity: 0.8;
+            font-size: 1.4rem;
+        }
+
+        /* Animations */
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-up {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        .fade-up.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            html {
+                font-size: 60%;
+            }
+
+            .about-content {
+                flex-direction: column;
+            }
+
+            .education-grid,
+            .projects-grid,
+            .accomplishments-grid {
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            html {
+                font-size: 55%;
+            }
+
+            .hero-title {
+                font-size: 4.5rem;
+            }
+
+            .mobile-toggle {
+                display: block;
+            }
+
+            .nav-menu {
+                position: fixed;
+                top: 80px;
+                left: 0;
+                width: 100%;
+                background-color: var(--primary-dark);
+                flex-direction: column;
+                align-items: center;
+                padding: 2rem 0;
+                clip-path: polygon(0 0, 100% 0, 100% 0, 0 0);
+                transition: var(--transition);
+            }
+
+            .nav-menu.active {
+                clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+            }
+
+            .nav-item {
+                margin: 1rem 0;
+            }
+
+            .experience-timeline::before {
+                left: 2rem;
+            }
+
+            .timeline-dot {
+                left: 2rem;
+            }
+
+            .timeline-content {
+                width: calc(100% - 6rem);
+                left: 6rem !important;
+            }
+
+            .timeline-item:nth-child(odd) .timeline-content::after,
+            .timeline-item:nth-child(even) .timeline-content::after {
+                display: none;
+            }
+
+            .grid-2,
+            .grid-3,
+            .grid-4 {
+                grid-template-columns: 1fr;
+            }
+
+            .hero-btns {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .btn {
+                width: 100%;
+                text-align: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .section {
+                padding: 6rem 0;
+            }
+
+            .hero-title {
+                font-size: 3.5rem;
+            }
+
+            .hero-subtitle {
+                font-size: 1.8rem;
+            }
+
+            .contact-info {
+                flex-direction: column;
+                gap: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container nav-container">
+            <a href="#" class="logo">
+                {% if resume.about.name is defined %}
+                    {% set name_parts = resume.about.name.split(' ') %}
+                    {% if name_parts|length > 1 %}
+                        {{ name_parts[0][0] }}<span>{{ name_parts[1][0] }}</span>
+                    {% else %}
+                        {{ name_parts[0][0] }}<span>P</span>
+                    {% endif %}
+                {% else %}
+                    D<span>P</span>
+                {% endif %}
+            </a>
+            <div class="mobile-toggle">
+                <i class="fas fa-bars"></i>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item"><a href="#about" class="nav-link">About</a></li>
+                <li class="nav-item"><a href="#education" class="nav-link">Education</a></li>
+                <li class="nav-item"><a href="#experience" class="nav-link">Experience</a></li>
+                <li class="nav-item"><a href="#projects" class="nav-link">Projects</a></li>
+                <li class="nav-item"><a href="#accomplishments" class="nav-link">Accomplishments</a></li>
+                <li class="nav-item"><a href="#contact" class="nav-link">Contact</a></li>
+            </ul>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-greeting">Hello, I'm</div>
+                <h1 class="hero-title">{{ resume.about.name|default('Professional Developer') }}</h1>
+                <div class="hero-subtitle">
+                    {% if resume.about.summary is defined %}
+                        {{ resume.about.summary }}
+                    {% else %}
+                        I build amazing web experiences
+                    {% endif %}
+                </div>
+                <div class="hero-btns">
+                    <a href="#projects" class="btn">View My Work</a>
+                    <a href="#contact" class="btn btn-outline">Contact Me</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="about section">
+        <div class="container">
+            <h2>About Me</h2>
+            <div class="about-content">
+                <div class="about-text">
+                    <p class="about-description">
+                        {% if resume.about.summary is defined %}
+                            {{ resume.about.summary }}
+                        {% else %}
+                            I'm a passionate developer focused on creating efficient, user-friendly software solutions. With a strong background in web development and a keen eye for detail, I strive to build applications that make a difference.
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+
+            {% if resume.skills is defined and resume.skills %}
+                <div class="skills-grid">
+                    {% for skill_group in resume.skills %}
+                        <div class="skill-card fade-up">
+                            <div class="skill-header">
+                                <div class="skill-icon">
+                                    {% if skill_group.category == "Programming Languages" %}
+                                        <i class="fas fa-code"></i>
+                                    {% elif skill_group.category == "Frameworks" %}
+                                        <i class="fas fa-layer-group"></i>
+                                    {% elif skill_group.category == "Cloud & Tools" %}
+                                        <i class="fas fa-cloud"></i>
+                                    {% else %}
+                                        <i class="fas fa-tools"></i>
+                                    {% endif %}
+                                </div>
+                                <h3 class="skill-title">{{ skill_group.category }}</h3>
+                            </div>
+                            <div class="skill-list">
+                                {% for skill in skill_group.skills %}
+                                    <span class="skill-tag">{{ skill }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    </section>
+
+    <!-- Education Section -->
+    <section id="education" class="education section section-dark">
+        <div class="container">
+            <h2>Education</h2>
+            
+            {% if resume.education is defined and resume.education %}
+                <div class="education-grid">
+                    {% for edu in resume.education %}
+                        <div class="education-card fade-up">
+                            <h3 class="education-degree">{{ edu.degree }}</h3>
+                            <div class="education-institution">{{ edu.university }}</div>
+                            
+                            {% if edu.location is defined %}
+                                <div class="education-location">
+                                    <i class="fas fa-map-marker-alt"></i> {{ edu.location }}
+                                </div>
+                            {% endif %}
+                            
+                            <div class="education-date">
+                                <i class="far fa-calendar-alt"></i> {{ edu.period }}
+                            </div>
+                            
+                            {% if edu.related_coursework is defined and edu.related_coursework %}
+                                <div class="education-courses">
+                                    <div class="education-courses-title">Related Coursework:</div>
+                                    <div class="courses-list">
+                                        {% for course in edu.related_coursework %}
+                                            <span class="course-tag">{{ course }}</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            {% endif %}
+                            
+                            {% if edu.gpa is defined %}
+                                <div class="education-gpa">
+                                    <strong>GPA:</strong> {{ edu.gpa }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-center">No education information available</p>
+            {% endif %}
+        </div>
+    </section>
+
+    <!-- Experience Section -->
+    <section id="experience" class="experience section">
+        <div class="container">
+            <h2>Work Experience</h2>
+            
+            {% if resume.experience is defined and resume.experience %}
+                <div class="experience-timeline">
+                    {% for job in resume.experience %}
+                        <div class="timeline-item fade-up">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-content">
+                                <h3 class="timeline-position">{{ job.position }}</h3>
+                                <div class="timeline-company">{{ job.company }}</div>
+                                <div class="timeline-period">
+                                    <i class="far fa-calendar-alt"></i> {{ job.period }}
+                                    {% if job.location is defined %}
+                                        <span class="timeline-location">
+                                            <i class="fas fa-map-marker-alt"></i> {{ job.location }}
+                                        </span>
+                                    {% endif %}
+                                </div>
+                                
+                                {% if job.responsibilities is defined and job.responsibilities %}
+                                    <div class="timeline-duties">
+                                        <div class="timeline-duties-title">Key Responsibilities:</div>
+                                        <ul class="duties-list">
+                                            {% for duty in job.responsibilities %}
+                                                <li class="duty-item">{{ duty }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-center">No work experience information available</p>
+            {% endif %}
+        </div>
+    </section>
+
+    <!-- Projects Section -->
+    <section id="projects" class="projects section section-dark">
+        <div class="container">
+            <h2>Projects</h2>
+            
+            {% if resume.projects is defined and resume.projects %}
+                <div class="projects-grid">
+                    {% for project in resume.projects %}
+                        <div class="project-card fade-up">
+                            <div class="project-header">
+                                <i class="fas fa-code"></i>
+                            </div>
+                            <div class="project-body">
+                                <h3 class="project-title">{{ project.name }}</h3>
+                                <p class="project-description">{{ project.description }}</p>
+                                
+                                {% if project.technologies is defined and project.technologies %}
+                                    <div class="project-tech">
+                                        {% for tech in project.technologies %}
+                                            <span class="tech-tag">{{ tech }}</span>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                
+                                <div class="project-links">
+                                    {% if project.url is defined and project.url %}
+                                        <a href="{{ project.url }}" class="project-link" target="_blank" rel="noopener noreferrer">
+                                            <i class="fab fa-github"></i>
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-center" style="color: var(--text-light);">No projects information available</p>
+            {% endif %}
+        </div>
+    </section>
+
+    <!-- Accomplishments Section -->
+    <section id="accomplishments" class="accomplishments section">
+        <div class="container">
+            <h2>Accomplishments</h2>
+            
+            {% if resume.accomplishments is defined and resume.accomplishments %}
+                <div class="accomplishments-grid">
+                    {% for item in resume.accomplishments %}
+                        <div class="accomplishment-card fade-up">
+                            <h3 class="accomplishment-title">{{ item.title }}</h3>
+                            <div class="accomplishment-date">
+                                <i class="far fa-calendar-alt"></i> {{ item.date }}
+                            </div>
+                            {% if item.link is defined and item.link %}
+                                <a href="{{ item.link }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline">View Details</a>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-center">No accomplishments information available</p>
+            {% endif %}
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="contact section section-dark">
+        <div class="container">
+            <h2>Get In Touch</h2>
+            <div class="contact-content">
+                <p class="contact-text">
+                    I'm currently open to new opportunities. Whether you have a question or just want to say hi, I'll get back to you!
+                </p>
+                
+                <div class="contact-info">
+                    {% if resume.about.email is defined %}
+                        <div class="contact-item">
+                            <i class="fas fa-envelope"></i>
+                            <a href="mailto:{{ resume.about.email }}">{{ resume.about.email }}</a>
+                        </div>
+                    {% endif %}
+                    
+                    {% if resume.about.phone is defined %}
+                        <div class="contact-item">
+                            <i class="fas fa-phone"></i>
+                            <a href="tel:{{ resume.about.phone }}">{{ resume.about.phone }}</a>
+                        </div>
+                    {% endif %}
+                    
+                    {% if resume.about.location is defined %}
+                        <div class="contact-item">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>{{ resume.about.location }}</span>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="contact-cta">
+                    <a href="mailto:{% if resume.about.email is defined %}{{ resume.about.email }}{% else %}hello@example.com{% endif %}" class="btn">Say Hello</a>
+                </div>
+                
+                <div class="social-links">
+                    {% if resume.about.linkedin_hyperlink is defined %}
+                        <a href="{{ resume.about.linkedin_hyperlink }}" class="social-link" target="_blank" rel="noopener noreferrer">
+                            <i class="fab fa-linkedin-in"></i>
+                        </a>
+                    {% endif %}
+                    
+                    {% if resume.about.github_hyperlink is defined %}
+                        <a href="{{ resume.about.github_hyperlink }}" class="social-link" target="_blank" rel="noopener noreferrer">
+                            <i class="fab fa-github"></i>
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p class="footer-text">© <span id="current-year">2025</span> {{ resume.about.name|default('Portfolio') }}. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Current Year
+        document.getElementById('current-year').textContent = new Date().getFullYear();
+        
+        // Mobile Menu Toggle
+        const mobileToggle = document.querySelector('.mobile-toggle');
+        const navMenu = document.querySelector('.nav-menu');
+        
+        mobileToggle.addEventListener('click', () => {
+            navMenu.classList.toggle('active');
+            
+            if (mobileToggle.querySelector('i').classList.contains('fa-bars')) {
+                mobileToggle.querySelector('i').classList.remove('fa-bars');
+                mobileToggle.querySelector('i').classList.add('fa-times');
+            } else {
+                mobileToggle.querySelector('i').classList.remove('fa-times');
+                mobileToggle.querySelector('i').classList.add('fa-bars');
+            }
+        });
+        
+        // Close menu when clicking a link
+        const navLinks = document.querySelectorAll('.nav-link');
+        navLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                navMenu.classList.remove('active');
+                mobileToggle.querySelector('i').classList.remove('fa-times');
+                mobileToggle.querySelector('i').classList.add('fa-bars');
+            });
+        });
+        
+        // Header scroll effect
+        window.addEventListener('scroll', () => {
+            const header = document.querySelector('.header');
+            if (window.scrollY > 100) {
+                header.classList.add('scrolled');
+            } else {
+                header.classList.remove('scrolled');
+            }
+        });
+        
+        // Smooth scrolling
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+        
+        // Scroll animations
+        const observerOptions = {
+            root: null,
+            rootMargin: '0px',
+            threshold: 0.1
+        };
+        
+        const observer = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, observerOptions);
+        
+        const fadeElements = document.querySelectorAll('.fade-up');
+        fadeElements.forEach(el => {
+            observer.observe(el);
+        });
+        
+        // Active navigation highlighting
+        const sections = document.querySelectorAll('section[id]');
+        
+        function highlightNavigation() {
+            let scrollY = window.pageYOffset;
+            
+            sections.forEach(current => {
+                const sectionHeight = current.offsetHeight;
+                const sectionTop = current.offsetTop - 100;
+                const sectionId = current.getAttribute('id');
+                
+                if (scrollY > sectionTop && scrollY <= sectionTop + sectionHeight) {
+                    document.querySelector(`.nav-link[href*=${sectionId}]`).classList.add('active');
+                } else {
+                    document.querySelector(`.nav-link[href*=${sectionId}]`).classList.remove('active');
+                }
+            });
+        }
+        
+        window.addEventListener('scroll', highlightNavigation);
+    </script>
+</body>
+</html>
